@@ -388,7 +388,7 @@ export class HomeDashboard {
             return `
               <div class="nt-home-favorites-empty">
                 <span>${icons.bookmark}</span>
-                <div><b>${t('No favorite characters yet')}</b><small>${t('Mark characters as favorites to keep them one click away on this page.')}</small></div>
+                <div class="nt-home-favorites-empty-copy"><b>${t('No favorite characters yet')}</b><small>${t('Mark characters as favorites to keep them one click away on this page.')}</small></div>
                 <button type="button" data-nt-home-action="characters">${t('Browse characters')}</button>
               </div>`;
         }
