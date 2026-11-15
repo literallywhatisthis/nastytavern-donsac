@@ -4,6 +4,16 @@ All notable changes to NastyTavern UI are documented here.
 
 ---
 
+## v0.1.14-donsac.9
+
+### Fixed
+
+- Chat meta boxes: set `position: relative` on `#chat .mes` so absolute token / `#id` / timer boxes anchor to each message (not the chat pane). Keep `top: 56px` under the name, equal gaps, avatar clear; only `:empty` hides.
+
+**Reload the extension / pull latest** after updating — `auto_update` is false.
+
+---
+
 ## v0.1.14-donsac.8
 
 ### Fixed
