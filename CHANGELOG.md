@@ -4,6 +4,16 @@ All notable changes to NastyTavern UI are documented here.
 
 ---
 
+## v0.1.14-donsac.12
+
+### Fixed
+
+- Chat meta boxes: restore the known-good header-band placement (`top: -95px`, original avatar chrome) for every message — under the name, above the prose, same for first and later. Dropped the donsac.11 wrapper-pin / first-only layout.
+
+**Reload the extension / pull latest** after updating — `auto_update` is false.
+
+---
+
 ## v0.1.14-donsac.11
 
 ### Fixed
