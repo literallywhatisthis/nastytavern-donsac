@@ -32816,17 +32816,20 @@ body.mt-enabled #chat .mes .timestamp::before {
 }
 
 body.mt-enabled #chat .mes {
+  /* Equal gaps; row starts under the name (clear of the 90px avatar at left:-90). */
   --nt-mes-meta-gap: 6px;
-  --nt-mes-meta-w: 4.5rem;
-  --nt-mes-meta-right: -30px;
+  --nt-mes-meta-w: 4.25rem;
+  --nt-mes-meta-left: 48.5%;
 }
 
 body.mt-enabled #chat .mes .tokenCounterDisplay,
 body.mt-enabled #chat .mes .mesIDDisplay,
 body.mt-enabled #chat .mes .mes_timer {
   position: absolute;
-  top: -125px;
-  z-index: 1000;
+  top: -95px;
+  left: auto;
+  right: auto;
+  z-index: 900;
   box-sizing: border-box;
   width: var(--nt-mes-meta-w);
   min-width: var(--nt-mes-meta-w);
@@ -32844,6 +32847,7 @@ body.mt-enabled #chat .mes .mes_timer {
   border: 1px solid var(--sub);
   padding: 5px 6px;
   border-radius: 0;
+  pointer-events: none;
 }
 
 /* Hide bordered meta slots when the counter is off / empty (no tofu box). */
@@ -32861,15 +32865,21 @@ body.mt-enabled #chat .mes .mes_timer:empty {
   pointer-events: none !important;
 }
 
-/* Equal gaps + stable right offsets (fixed slot width, not content-width). */
+/* LTR under the name: token → #id → timer, equal fixed gaps, never over the avatar. */
 body.mt-enabled #chat .mes .tokenCounterDisplay {
-  right: var(--nt-mes-meta-right);
+  left: var(--nt-mes-meta-left);
 }
 body.mt-enabled #chat .mes .mesIDDisplay {
-  right: calc(var(--nt-mes-meta-right) + var(--nt-mes-meta-w) + var(--nt-mes-meta-gap));
+  left: calc(var(--nt-mes-meta-left) + var(--nt-mes-meta-w) + var(--nt-mes-meta-gap));
 }
 body.mt-enabled #chat .mes .mes_timer {
-  right: calc(var(--nt-mes-meta-right) + 2 * (var(--nt-mes-meta-w) + var(--nt-mes-meta-gap)));
+  left: calc(var(--nt-mes-meta-left) + 2 * (var(--nt-mes-meta-w) + var(--nt-mes-meta-gap)));
+}
+
+/* Avatar stays above meta if anything still collides. */
+body.mt-enabled #chat .mes .avatar,
+body.mt-enabled #chat .mes .mesAvatarWrapper {
+  z-index: 1100;
 }
 
 body.mt-enabled #chat .mes .mes_text {
@@ -33323,26 +33333,49 @@ body.mt-enabled {
   --mt-accent: #7a9bb8;
   --mt-accent-contrast: #0a0e14;
   --active: #7a9bb8;
-  --SmartThemeQuoteColor: #a8a8a8;
+  --golden: #7a9bb8;
+  /* Kill ST theme salmon/pink/peach body text + green accents leaking in. */
+  --SmartThemeBodyColor: #d6d6d6;
   --SmartThemeEmColor: #aeaeae;
+  --SmartThemeQuoteColor: #a8a8a8;
   --SmartThemeUnderlineColor: #a8a8a8;
   --SmartThemeBorderColor: #7a7a7a;
+  --SmartThemeChatTintColor: #000000;
+  --SmartThemeBlurTintColor: #0a0a0a;
+  --SmartThemeBotMesBlurTintColor: #000000;
+  --SmartThemeUserMesBlurTintColor: #000000;
+  --SmartThemeShadowColor: transparent;
+  color: #d6d6d6;
   accent-color: #7a9bb8;
 }
 
-/* Cover chat while Lorebooks is mounting (native World Info init is async). */
+/* Cover ANY previous view while Lorebooks mounts (Home, Chat, other workspaces). */
 body.mt-enabled.nt-lorebook-workspace-opening #sheld,
 body.mt-enabled.nt-lorebook-workspace-opening #form_sheld,
 body.mt-enabled.nt-lorebook-workspace-opening #send_form,
+body.mt-enabled.nt-lorebook-workspace-opening #chat,
+body.mt-enabled.nt-lorebook-workspace-opening #nt-home-dashboard,
+body.mt-enabled.nt-lorebook-workspace-opening #nt-character-workspace,
+body.mt-enabled.nt-lorebook-workspace-opening #nt-persona-workspace,
+body.mt-enabled.nt-lorebook-workspace-opening #nt-background-workspace,
 body.mt-enabled.nt-lorebook-workspace-open #sheld,
 body.mt-enabled.nt-lorebook-workspace-open #form_sheld,
-body.mt-enabled.nt-lorebook-workspace-open #send_form {
+body.mt-enabled.nt-lorebook-workspace-open #send_form,
+body.mt-enabled.nt-lorebook-workspace-open #chat,
+body.mt-enabled.nt-lorebook-workspace-open #nt-home-dashboard,
+body.mt-enabled.nt-lorebook-workspace-open #nt-character-workspace,
+body.mt-enabled.nt-lorebook-workspace-open #nt-persona-workspace,
+body.mt-enabled.nt-lorebook-workspace-open #nt-background-workspace {
   visibility: hidden !important;
   pointer-events: none !important;
 }
 
-body.mt-enabled.nt-lorebook-workspace-opening #nt-lorebook-workspace:not([hidden]) {
+body.mt-enabled.nt-lorebook-workspace-opening #nt-lorebook-workspace:not([hidden]),
+body.mt-enabled.nt-lorebook-workspace-open #nt-lorebook-workspace:not([hidden]) {
+  visibility: visible !important;
+  pointer-events: auto !important;
   background: #000 !important;
+  z-index: 3200 !important;
 }
 
 /* Opaque sidebar so character art never bleeds through */
@@ -33682,4 +33715,184 @@ body.mt-enabled .toggle_on,
 body.mt-enabled .world_entry_form_control .toggle_on,
 body.mt-enabled .neo-range-counter {
   color: var(--mt-accent, #7a9bb8) !important;
+}
+
+/* =============================================================================
+   Donsac UI feedback patch (0.1.14-donsac.5)
+   - Meta boxes clear of avatar
+   - Modal opacity / compact ranges: thin track, blue thumb (no fat grey fill)
+   - Chat Appearance User tabs: muted blue active (not lime)
+   - Character list: gray text + restore FA icons (not salmon/pink/hollow)
+   - Full SmartTheme pink/green remaps
+   ============================================================================= */
+
+/* Modal opacity + other compact header ranges: kill fat grey fill */
+body.mt-enabled .nt-modal-opacity-control input[type="range"],
+body.mt-enabled .nt-chat-appearance-number-control input[type="range"],
+body.mt-enabled .nt-pref-setting-control input[type="range"] {
+  -webkit-appearance: none !important;
+  appearance: none !important;
+  height: 18px !important;
+  min-height: 18px !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  background: transparent !important;
+  border: 0 !important;
+  box-shadow: none !important;
+  accent-color: #7a9bb8 !important;
+}
+
+body.mt-enabled .nt-modal-opacity-control input[type="range"]::-webkit-slider-runnable-track,
+body.mt-enabled .nt-chat-appearance-number-control input[type="range"]::-webkit-slider-runnable-track,
+body.mt-enabled .nt-pref-setting-control input[type="range"]::-webkit-slider-runnable-track {
+  height: 3px !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: #7a7a7a !important;
+}
+
+body.mt-enabled .nt-modal-opacity-control input[type="range"]::-webkit-slider-thumb,
+body.mt-enabled .nt-chat-appearance-number-control input[type="range"]::-webkit-slider-thumb,
+body.mt-enabled .nt-pref-setting-control input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none !important;
+  appearance: none !important;
+  width: 12px !important;
+  height: 12px !important;
+  margin-top: -4.5px !important;
+  border: 1px solid #7a9bb8 !important;
+  border-radius: 0 !important;
+  background: #7a9bb8 !important;
+  box-shadow: none !important;
+}
+
+body.mt-enabled .nt-modal-opacity-control input[type="range"]::-moz-range-track,
+body.mt-enabled .nt-chat-appearance-number-control input[type="range"]::-moz-range-track,
+body.mt-enabled .nt-pref-setting-control input[type="range"]::-moz-range-track {
+  height: 3px !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: #7a7a7a !important;
+}
+
+body.mt-enabled .nt-modal-opacity-control input[type="range"]::-moz-range-progress,
+body.mt-enabled .nt-chat-appearance-number-control input[type="range"]::-moz-range-progress,
+body.mt-enabled .nt-pref-setting-control input[type="range"]::-moz-range-progress {
+  height: 3px !important;
+  border-radius: 0 !important;
+  background: color-mix(in srgb, #7a9bb8 55%, #7a7a7a) !important;
+}
+
+body.mt-enabled .nt-modal-opacity-control input[type="range"]::-moz-range-thumb,
+body.mt-enabled .nt-chat-appearance-number-control input[type="range"]::-moz-range-thumb,
+body.mt-enabled .nt-pref-setting-control input[type="range"]::-moz-range-thumb {
+  width: 12px !important;
+  height: 12px !important;
+  border: 1px solid #7a9bb8 !important;
+  border-radius: 0 !important;
+  background: #7a9bb8 !important;
+  box-shadow: none !important;
+}
+
+/* Chat Appearance / User tabs: muted blue active, never lime/olive */
+body.mt-enabled .nt-chat-appearance-role-tab.is-active {
+  color: #d6d6d6 !important;
+  border-bottom-color: #7a9bb8 !important;
+  background: color-mix(in srgb, #7a9bb8 10%, transparent) !important;
+}
+
+body.mt-enabled .nt-chat-appearance-subtab.is-active,
+body.mt-enabled .nt-chat-appearance-category.is-active {
+  color: #d6d6d6 !important;
+  border-color: #7a9bb8 !important;
+  background: color-mix(in srgb, #7a9bb8 10%, transparent) !important;
+}
+
+body.mt-enabled .nt-chat-appearance-role-tabs {
+  border-bottom-color: #7a7a7a !important;
+}
+
+/* Character list: Donsac gray text (not ST salmon/pink) + FA toolbar glyphs */
+body.mt-enabled #nt-character-workspace,
+body.mt-enabled #nt-character-workspace #rm_print_characters_block,
+body.mt-enabled #nt-character-workspace .character_select,
+body.mt-enabled #nt-character-workspace .group_select,
+body.mt-enabled #nt-character-workspace .bogus_folder_select,
+body.mt-enabled #rm_print_characters_block,
+body.mt-enabled #rm_print_characters_block .character_select,
+body.mt-enabled #rm_print_characters_block .character_select .ch_name,
+body.mt-enabled #rm_print_characters_block .character_select .ch_description,
+body.mt-enabled #rm_print_characters_block .character_name_block,
+body.mt-enabled #rm_print_characters_block .character_name_block *,
+body.mt-enabled #rm_print_characters_block .ch_description,
+body.mt-enabled #rm_print_characters_block .description_voice,
+body.mt-enabled #charListFixedTop,
+body.mt-enabled #charListFixedTop * {
+  color: #d6d6d6 !important;
+}
+
+body.mt-enabled #nt-character-workspace #rm_print_characters_block .ch_description,
+body.mt-enabled #rm_print_characters_block .ch_description,
+body.mt-enabled #rm_print_characters_block .character_select small,
+body.mt-enabled #rm_print_characters_block .character_version {
+  color: #a8a8a8 !important;
+}
+
+body.mt-enabled #nt-character-workspace #rm_button_bar :is(.fa, .fas, .far, .fab, .fal, .fad, .fa-solid, .fa-regular, .fa-brands),
+body.mt-enabled #nt-character-workspace #rm_button_bar .menu_button:is(.fa, .fas, .far, .fab, .fa-solid, .fa-regular, .fa-brands),
+body.mt-enabled #nt-character-workspace #charListFixedTop :is(.fa, .fas, .far, .fab, .fa-solid, .fa-regular, .fa-brands),
+body.mt-enabled #nt-character-workspace .rm_tag_controls :is(.fa, .fas, .far, .fab, .fa-solid, .fa-regular, .fa-brands),
+body.mt-enabled #CharListButtonAndHotSwaps :is(.fa, .fas, .far, .fab, .fa-solid, .fa-regular, .fa-brands),
+body.mt-enabled #right-nav-panel #rm_button_bar :is(.fa, .fas, .far, .fab, .fa-solid, .fa-regular, .fa-brands) {
+  font-family: var(--fa-style-family-solid, "Font Awesome 6 Free"), "Font Awesome 6 Pro", "Font Awesome 5 Free", "FontAwesome" !important;
+  font-style: normal !important;
+  font-variant: normal !important;
+  font-weight: 900 !important;
+  text-rendering: auto !important;
+  -webkit-font-smoothing: antialiased;
+  background-image: none !important;
+  color: #d6d6d6 !important;
+}
+
+body.mt-enabled #nt-character-workspace #rm_button_bar :is(.fa, .fas, .far, .fab, .fa-solid, .fa-regular)::before,
+body.mt-enabled #nt-character-workspace #charListFixedTop :is(.fa, .fas, .far, .fab, .fa-solid, .fa-regular)::before,
+body.mt-enabled #CharListButtonAndHotSwaps :is(.fa, .fas, .far, .fab, .fa-solid, .fa-regular)::before,
+body.mt-enabled #right-nav-panel #rm_button_bar :is(.fa, .fas, .far, .fab, .fa-solid, .fa-regular)::before {
+  display: inline-block !important;
+  font-family: inherit !important;
+  font-weight: inherit !important;
+  color: inherit !important;
+  background: none !important;
+}
+
+/* Active filter / fav chips on character list: muted blue, not olive */
+body.mt-enabled #nt-character-workspace #rm_button_bar .menu_button.fav_on,
+body.mt-enabled #nt-character-workspace #rm_button_bar .menu_button.is-active,
+body.mt-enabled #CharListButtonAndHotSwaps .menu_button.fav_on,
+body.mt-enabled #right-nav-panel #rm_button_bar .menu_button.fav_on {
+  color: #7a9bb8 !important;
+  border-color: #7a9bb8 !important;
+  background: color-mix(in srgb, #7a9bb8 14%, transparent) !important;
+}
+
+/* Broad leftover green/olive → muted blue for common ST active chrome */
+body.mt-enabled :is(
+  .menu_button.active,
+  .menu_button.selected,
+  .drawer-icon.openIcon,
+  .toggle_button.on,
+  .filteredByFavorites
+),
+body.mt-enabled .filteredByFavorites {
+  color: #7a9bb8 !important;
+}
+
+/* Catch remaining SmartTheme pink on native panels / workspaces */
+body.mt-enabled #right-nav-panel,
+body.mt-enabled #left-nav-panel,
+body.mt-enabled #user-settings-block,
+body.mt-enabled .mt-native-panel,
+body.mt-enabled .nt-native-workspace {
+  color: #d6d6d6;
+  --SmartThemeBodyColor: #d6d6d6;
+  --active: #7a9bb8;
 }

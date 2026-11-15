@@ -1052,9 +1052,11 @@ export class NastyTavern {
         }
         if (view === 'lorebooks' && this.isLorebookWorkspaceOpen()) await this.closeLorebookWorkspace({ restoreFocus: false });
 
-        // Switch the shell view first so chat cannot flash while the provider mounts.
+        // Cover previous view (Home/Chat/etc.) before switching so nothing flashes.
+        if (view === 'lorebooks') {
+            document.body?.classList.add('nt-lorebook-workspace-opening', 'mt-panel-switching');
+        }
         this.setView(view, provider.label);
-        if (view === 'lorebooks') document.body?.classList.add('nt-lorebook-workspace-opening', 'mt-panel-switching');
 
         const existing = this.findThirdPartyWorkspaceSurface(view);
         const panel = document.querySelector(provider.panelSelector);
@@ -3815,12 +3817,12 @@ export class NastyTavern {
         if (this.lorebookWorkspaceOpening) return false;
 
         this.lorebookWorkspaceOpening = true;
-        // Claim the Lorebooks view and cover chat immediately so the previous
-        // view cannot flash while native World Info initializes.
-        this.setView('lorebooks');
+        // Cover the previous view (Home or Chat) BEFORE setView, then show the
+        // Lorebooks shell so nothing underneath can flash during WI init.
         const root = this.ensureLorebookWorkspaceRoot();
+        document.body?.classList.add('nt-lorebook-workspace-opening', 'mt-panel-switching', 'nt-lorebook-workspace-open');
         root.hidden = false;
-        document.body?.classList.add('nt-lorebook-workspace-open', 'nt-lorebook-workspace-opening');
+        this.setView('lorebooks');
         try {
             if (this.isGroupModalOpen()) await this.closeGroupModal({ restoreFocus: false, reopenCharacters: false });
             if (this.isCharacterCreateModalOpen()) await this.closeCharacterCreateModal({ restoreFocus: false });
@@ -3831,7 +3833,6 @@ export class NastyTavern {
             const opener = document.activeElement instanceof HTMLElement ? document.activeElement : null;
             let result;
             this.lorebookNativeTogglePassThrough = true;
-            document.body?.classList.add('mt-panel-switching');
             try {
                 result = await this.dom.click('worldInfo', ['World Info', 'Lorebook']);
             } finally {
@@ -3841,7 +3842,7 @@ export class NastyTavern {
             const native = await this.waitForNativeLorebookContent();
             if (!native || (!result.ok && !native.panel)) {
                 root.hidden = true;
-                document.body?.classList.remove('nt-lorebook-workspace-open');
+                document.body?.classList.remove('nt-lorebook-workspace-open', 'nt-lorebook-workspace-opening', 'mt-panel-switching');
                 this.setView('chat');
                 this.toast(t('Could not open Lorebooks.'));
                 return false;
@@ -3849,7 +3850,7 @@ export class NastyTavern {
 
             if (!this.mountNativeLorebookContent(root, { opener })) {
                 root.hidden = true;
-                document.body?.classList.remove('nt-lorebook-workspace-open');
+                document.body?.classList.remove('nt-lorebook-workspace-open', 'nt-lorebook-workspace-opening', 'mt-panel-switching');
                 this.setView('chat');
                 this.toast(t('Could not open Lorebooks.'));
                 return false;
