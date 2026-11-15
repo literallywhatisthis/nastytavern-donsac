@@ -356,7 +356,8 @@ body.mt-enabled::after {
   height: 7px;
   border-radius: 50%;
   background: var(--mt-success);
-  box-shadow: 0 0 0 4px rgba(69,211,154,.1);
+  /* Donsac: muted blue halo — never mint/lime success glow */
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--mt-accent, #7a9bb8) 18%, transparent);
   flex: 0 0 auto;
 }
 
@@ -26077,7 +26078,7 @@ body.mt-enabled dialog#nt-extension-settings-popup.nt-extension-settings-popup-d
 .nt-catalogue-toolbar-filters select { min-width: 140px; padding: 0 32px 0 10px; }
 .nt-catalogue-upload-button { display: inline-flex; align-items: center; gap: 7px; padding: 0 12px; font-weight: 700; }
 .nt-catalogue-upload-button svg { width: 17px; height: 17px; fill: currentColor; }
-.nt-catalogue-upload-button small { padding: 2px 6px; border-radius: 999px; background: color-mix(in srgb, var(--mt-accent) 18%, transparent); color: var(--mt-accent-text, #d9caff); }
+.nt-catalogue-upload-button small { padding: 2px 6px; border-radius: 999px; background: color-mix(in srgb, var(--mt-accent) 18%, transparent); color: var(--mt-accent-text, #a8c0d4); }
 
 .nt-catalogue-layout {
   min-height: 0;
@@ -26299,7 +26300,7 @@ body.mt-enabled dialog#nt-extension-settings-popup.nt-extension-settings-popup-d
 .nt-catalogue-replace-summary,
 .nt-catalogue-replace-image-warning { display: flex; align-items: flex-start; gap: 10px; padding: 10px; border: 1px solid var(--mt-border); border-radius: 9px; background: var(--mt-surface-2); }
 .nt-catalogue-replace-summary > span,
-.nt-catalogue-replace-image-warning > span { flex: 0 0 20px; width: 20px; height: 20px; color: var(--mt-accent-text, #d9caff); }
+.nt-catalogue-replace-image-warning > span { flex: 0 0 20px; width: 20px; height: 20px; color: var(--mt-accent-text, #a8c0d4); }
 .nt-catalogue-replace-summary svg,
 .nt-catalogue-replace-image-warning svg { width: 100%; height: 100%; fill: currentColor; }
 .nt-catalogue-replace-summary > div,
@@ -26359,7 +26360,7 @@ body.mt-enabled .nt-catalogue-upload-source-card > span {
   place-items: center;
   border-radius: 8px;
   background: var(--mt-surface-1);
-  color: var(--mt-accent-text, #d9caff);
+  color: var(--mt-accent-text, #a8c0d4);
 }
 body.mt-enabled .nt-catalogue-upload-source-card > span svg {
   width: 18px;
@@ -26663,7 +26664,7 @@ body.mt-enabled .nt-catalogue-library-empty small {
 .nt-catalogue-review-badge.is-pending { color:#ffe2a8; border-color:rgba(244,184,76,.42); background:rgba(92,65,17,.78); }
 .nt-catalogue-review-badge.is-rejected { color:#ffb9c0; border-color:rgba(255,91,111,.42); background:rgba(91,20,32,.8); }
 .nt-catalogue-review-badge.is-approved { color:#bff4d0; border-color:rgba(100,214,141,.32); background:rgba(20,73,42,.7); }
-.nt-catalogue-nav [data-nt-catalogue-mod-nav] small:not(:empty) { color:var(--mt-accent-text, #d9caff); }
+.nt-catalogue-nav [data-nt-catalogue-mod-nav] small:not(:empty) { color:var(--mt-accent-text, #a8c0d4); }
 .nt-catalogue-nav [data-nt-catalogue-mod-nav] small { min-width:22px; text-align:center; }
 
 @media (max-width: 720px), (max-height: 560px) and (pointer: coarse) {
@@ -26775,7 +26776,7 @@ body.mt-enabled #nt-character-details-modal[data-nt-character-details-context="c
   border: 1px solid var(--mt-border);
   border-radius: 8px;
   background: var(--mt-surface-1);
-  color: var(--mt-accent-text, #d9caff);
+  color: var(--mt-accent-text, #a8c0d4);
 }
 
 .nt-catalogue-detail-acquisitions svg {
@@ -33349,6 +33350,7 @@ body.mt-enabled .menu_button_icon {
 body.mt-enabled {
   --mt-accent: #7a9bb8;
   --mt-accent-contrast: #0a0e14;
+  --mt-accent-text: #a8c0d4;
   --active: #7a9bb8;
   --golden: #7a9bb8;
   /* Kill ST theme salmon/pink/peach body text + green accents leaking in. */
@@ -33923,6 +33925,7 @@ body.mt-enabled .nt-native-workspace {
 html body.mt-enabled {
   --mt-accent: #7a9bb8 !important;
   --mt-accent-contrast: #0a0e14 !important;
+  --mt-accent-text: #a8c0d4 !important;
   --active: #7a9bb8 !important;
   --golden: #7a9bb8 !important;
   --SmartThemeBodyColor: #d6d6d6 !important;
@@ -34286,4 +34289,12 @@ html body.mt-enabled .nt-home-favorites-empty small,
 html body.mt-enabled .nt-home-list-empty b,
 html body.mt-enabled .nt-home-list-empty small {
   display: block !important;
+}
+
+/* Connection online glow: never mint/lime (0.1.14-donsac.7 leftover pass) */
+html body.mt-enabled .mt-connection-dot {
+  box-shadow: 0 0 0 4px color-mix(in srgb, #7a9bb8 18%, transparent) !important;
+}
+html body.mt-enabled .mt-connection.is-offline .mt-connection-dot {
+  box-shadow: 0 0 0 4px rgba(255, 105, 120, .1) !important;
 }

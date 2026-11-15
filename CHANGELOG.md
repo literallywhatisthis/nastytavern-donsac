@@ -4,6 +4,17 @@ All notable changes to NastyTavern UI are documented here.
 
 ---
 
+## v0.1.14-donsac.7
+
+### Fixed
+
+- Leftover pass on main: connection online halo was still mint (`rgba(69,211,154,…)`) → muted blue; catalogue `--mt-accent-text` fallback lavender `#d9caff` → `#a8c0d4`.
+- Confirmed ranges stay thin `#7a7a7a` + `#7a9bb8` thumb; no ST lime/olive UI chrome; no pink body text; favorites empty stack + meta under name intact.
+
+**Reload the extension / pull latest** after updating — `auto_update` is false.
+
+---
+
 ## v0.1.14-donsac.6
 
 ### Fixed
