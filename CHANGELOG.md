@@ -4,6 +4,21 @@ All notable changes to NastyTavern UI are documented here.
 
 ---
 
+## v0.1.14-donsac.5
+
+### Fixed
+
+- Message meta boxes: keep equal gaps, but place the row under the name / clear of the avatar (no portrait overlap).
+- Modal opacity (and similar compact ranges): thin `#7a7a7a` track + square `#7a9bb8` thumb — no fat grey fill.
+- Chat Appearance User tabs / active subtabs: muted blue borders (not lime/olive).
+- Lorebooks open: cover previous view (Home **or** Chat / other workspaces) before mount — no flash.
+- Character list: force Donsac gray text (not ST salmon/pink); restore Font Awesome toolbar icons; fav/filter active → muted blue.
+- Remap SmartTheme body/chat tint vars off pink/peach; keep `#7a9bb8` only for real accents.
+
+**Reload the extension / pull latest** after updating — `auto_update` is false.
+
+---
+
 ## v0.1.14-donsac.4
 
 ### Changed
