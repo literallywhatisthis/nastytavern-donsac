@@ -4,6 +4,20 @@ All notable changes to NastyTavern UI are documented here.
 
 ---
 
+## v0.1.14-donsac.2
+
+### Fixed (Donsac fork UI feedback)
+
+- Remapped remaining green/teal accents (health pulse, world-set active, WII strategy, ST `--active` fallbacks) to Donsac grayscale (`#d6d6d6` / `#e0e0e0`).
+- Home update notice / hero primary actions: dark text on light gray buttons for readable contrast (no green buttons).
+- Character expression / zoomed portrait / persona lightbox: offset clear of the left sidebar; sidebar background made opaque so art no longer merges through it.
+- Send form: compact single-row layout (shorter height/padding); hamburger, sparkles, and send icons forced to `#d6d6d6`.
+- Message edit / confirm / cancel / reorder icons: restore Font Awesome glyphs inside `.mes` (Donsac `font-family !important` had blanked them). Do not hide pencil/ellipsis `::before` in favor of remote background images.
+
+**Reload the extension / pull latest** after updating — `auto_update` is false.
+
+---
+
 ## v0.1.14
 
 ### One-click updates (revision 115)

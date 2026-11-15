@@ -2916,7 +2916,7 @@ body.mt-enabled .nt-wii-search input {
   width: 18px;
   flex: 0 0 18px;
   text-align: center;
-  color: #45ce7a;
+  color: #d6d6d6;
   font-size: var(--nt-font-subtitle);
 }
 
@@ -4570,9 +4570,9 @@ body.mt-enabled .mt-header-profile-current:disabled {
 body.mt-enabled #set_character_world.world_set,
 body.mt-enabled #world_button.world_set,
 body.mt-enabled #persona_lore_button.world_set {
-  color: var(--active, #58b600);
-  border-color: color-mix(in srgb, var(--active, #58b600) 62%, var(--mt-border));
-  background: color-mix(in srgb, var(--active, #58b600) 13%, rgba(255,255,255,.025));
+  color: var(--active, #d6d6d6);
+  border-color: color-mix(in srgb, var(--active, #d6d6d6) 62%, var(--mt-border));
+  background: color-mix(in srgb, var(--active, #d6d6d6) 13%, rgba(255,255,255,.025));
 }
 
 body.mt-enabled #set_character_world.world_set svg,
@@ -5676,7 +5676,7 @@ body.mt-enabled .nt-health-modal footer [data-nt-health-copy] span {
 }
 
 body.mt-enabled .mt-sidebar-bottom [data-mt-health] .mt-nav-icon {
-  color: #7fcdb1;
+  color: #d6d6d6;
 }
 
 @media (max-width:900px) {
@@ -32912,13 +32912,18 @@ body.mt-enabled #chat .nt-chat-character-context {
   font-family: Arsenal, sans-serif;
 }
 
-/* Send form */
+/* Send form — compact single-row Donsac chrome */
 body.mt-enabled #send_form {
   display: flex;
-  width: 95%;
+  align-items: center;
+  width: min(95%, calc(var(--nt-chat-inline-size, 960px) - 28px));
+  min-height: 0 !important;
+  height: auto !important;
+  max-height: none;
+  padding: 4px 6px !important;
   border-radius: 0 !important;
   background: #000 !important;
-  transition: all 0.4s ease-in-out;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
   box-shadow:
     1px 1px 0 var(--sub),
     -1px -1px 0 var(--sub),
@@ -32928,18 +32933,28 @@ body.mt-enabled #send_form {
 
 body.mt-enabled #send_form #nonQRFormItems {
   border-radius: 0 !important;
-  grid-template-areas:
-    "textarea textarea"
-    "left right" !important;
-  gap: 5px;
+  display: grid !important;
+  grid-template-columns: auto minmax(0, 1fr) auto !important;
+  grid-template-rows: auto !important;
+  grid-template-areas: "left textarea right" !important;
+  align-items: center;
+  gap: 4px 8px;
+  min-height: 0;
+  padding: 0 !important;
 }
 
 body.mt-enabled #send_textarea {
+  grid-area: textarea;
   font-family: "Barlow Condensed", Arsenal, sans-serif !important;
-  font-size: 16px;
+  font-size: 15px;
+  line-height: 1.25;
   background: transparent !important;
   border-radius: 0 !important;
   color: var(--sub) !important;
+  min-height: 28px !important;
+  height: 28px !important;
+  max-height: 120px !important;
+  padding: 4px 8px !important;
 }
 
 body.mt-enabled #send_textarea::placeholder {
@@ -32950,17 +32965,26 @@ body.mt-enabled #send_textarea::placeholder {
 }
 
 body.mt-enabled #leftSendForm {
+  grid-area: left;
   display: flex;
   align-items: center;
-  margin-left: 25px;
-  gap: 20px;
-  padding: 15px 10px;
+  margin: 0 !important;
+  margin-left: 4px !important;
+  gap: 8px;
+  padding: 2px 4px !important;
+  width: auto !important;
+  min-width: 0 !important;
 }
 
 body.mt-enabled #rightSendForm {
+  grid-area: right;
   display: flex;
+  align-items: center;
   justify-content: flex-end;
-  margin-right: 25px;
+  margin: 0 !important;
+  margin-right: 4px !important;
+  padding: 2px 4px !important;
+  gap: 8px;
 }
 
 /* Mobile message tweaks */
@@ -33243,4 +33267,242 @@ body.mt-enabled .buttons_block .menu_button,
 body.mt-enabled .menu_button_icon {
   background: none;
   border-radius: 0;
+}
+
+/* =============================================================================
+   Donsac UI feedback patch (0.1.14-donsac.2)
+   - Kill leftover green/teal accents
+   - Compact send form + force gray send icons
+   - Home update contrast
+   - Character art / lightbox clear of sidebar
+   - Restore Font Awesome glyphs inside .mes (overlay font-family broke them)
+   ============================================================================= */
+
+body.mt-enabled {
+  --active: #d6d6d6;
+  --SmartThemeQuoteColor: #d6d6d6;
+  --SmartThemeEmColor: #aeaeae;
+  --SmartThemeUnderlineColor: #a8a8a8;
+}
+
+/* Opaque sidebar so character art never bleeds through */
+body.mt-enabled .mt-sidebar {
+  background: #000 !important;
+  border-right: 1px solid var(--sub, #d6d6d6) !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  opacity: 1 !important;
+}
+
+/* Expression / character portrait: stay to the right of the sidebar */
+body.mt-enabled #expression-wrapper {
+  left: var(--mt-nav-width, 222px) !important;
+  width: calc(100% - var(--mt-nav-width, 222px)) !important;
+  right: 0 !important;
+  box-sizing: border-box;
+}
+
+body.mt-enabled.waifuMode #expression-wrapper > .expression-holder,
+body.mt-enabled.waifuMode #expression-wrapper #expression-holder {
+  left: var(--mt-nav-width, 222px) !important;
+  width: calc(100% - var(--mt-nav-width, 222px)) !important;
+  right: 0 !important;
+  max-width: none !important;
+}
+
+body.mt-enabled .zoomed_avatar,
+body.mt-enabled #zoomed_avatar,
+body.mt-enabled .zoomed_avatar img,
+body.mt-enabled #zoomed_avatar img {
+  left: var(--mt-nav-width, 222px) !important;
+  max-width: calc(100vw - var(--mt-nav-width, 222px)) !important;
+}
+
+body.mt-enabled .nt-persona-lightbox {
+  left: var(--mt-nav-width, 222px) !important;
+  right: 0 !important;
+  top: 0 !important;
+  bottom: 0 !important;
+  width: auto !important;
+  inset: unset !important;
+  z-index: 6500 !important;
+  background: rgba(0, 0, 0, .92) !important;
+}
+
+body.mt-nav-hidden .nt-persona-lightbox,
+body.mt-nav-hidden #expression-wrapper,
+body.mt-nav-hidden.waifuMode #expression-wrapper > .expression-holder,
+body.mt-nav-hidden.waifuMode #expression-wrapper #expression-holder {
+  left: 0 !important;
+  width: 100% !important;
+}
+
+/* Send / options icons: force Donsac gray (ST theme neon green often wins otherwise) */
+body.mt-enabled #send_form,
+body.mt-enabled #send_form #leftSendForm,
+body.mt-enabled #send_form #rightSendForm,
+body.mt-enabled #send_form #leftSendForm > *,
+body.mt-enabled #send_form #rightSendForm > *,
+body.mt-enabled #send_form .menu_button,
+body.mt-enabled #send_form .interactable,
+body.mt-enabled #send_form #options_button,
+body.mt-enabled #options_button,
+body.mt-enabled #send_form :is(#send_but, #send_button),
+body.mt-enabled :is(#send_but, #send_button) {
+  color: #d6d6d6 !important;
+  fill: #d6d6d6 !important;
+}
+
+body.mt-enabled #send_form #leftSendForm > * :is(i, span, svg),
+body.mt-enabled #send_form #rightSendForm > * :is(i, span, svg),
+body.mt-enabled #send_form #options_button :is(i, span, svg),
+body.mt-enabled #options_button :is(i, span, svg),
+body.mt-enabled #send_form :is(#send_but, #send_button) :is(i, span, svg),
+body.mt-enabled :is(#send_but, #send_button) :is(i, span, svg) {
+  color: #d6d6d6 !important;
+  fill: #d6d6d6 !important;
+}
+
+body.mt-enabled #send_form #leftSendForm > *:hover,
+body.mt-enabled #send_form #rightSendForm > *:hover,
+body.mt-enabled #send_form #options_button:hover,
+body.mt-enabled #options_button:hover,
+body.mt-enabled #send_form :is(#send_but, #send_button):hover {
+  color: #e0e0e0 !important;
+  fill: #e0e0e0 !important;
+  background: color-mix(in srgb, #d6d6d6 10%, transparent) !important;
+}
+
+/* Home update notice — readable grayscale, no green buttons */
+body.mt-enabled .nt-home-update-notice,
+body.mt-enabled .nt-home-update-notice.is-update-available,
+body.mt-enabled .nt-home-update-notice.is-update-installed {
+  border-color: var(--subsub, #7a7a7a) !important;
+  border-left-color: var(--sub, #d6d6d6) !important;
+  background: #0a0a0a !important;
+  color: var(--sub, #d6d6d6) !important;
+}
+
+body.mt-enabled .nt-home-update-title-row h2,
+body.mt-enabled .nt-home-update-changes li p,
+body.mt-enabled .nt-home-update-no-notes {
+  color: var(--sub, #d6d6d6) !important;
+}
+
+body.mt-enabled .nt-home-update-title-row small,
+body.mt-enabled .nt-home-update-changes li b,
+body.mt-enabled .nt-home-update-changes summary,
+body.mt-enabled .nt-home-update-link {
+  color: var(--subsub, #7a7a7a) !important;
+}
+
+body.mt-enabled .nt-home-update-icon,
+body.mt-enabled .nt-home-update-notice.is-update-available .nt-home-update-icon,
+body.mt-enabled .nt-home-update-notice.is-update-installed .nt-home-update-icon {
+  border-color: var(--subsub, #7a7a7a) !important;
+  background: #141414 !important;
+  color: var(--sub, #d6d6d6) !important;
+}
+
+body.mt-enabled .nt-home-update-now,
+body.mt-enabled .nt-home-update-recheck,
+body.mt-enabled a.nt-home-update-now {
+  border: 1px solid var(--sub, #d6d6d6) !important;
+  background: #e0e0e0 !important;
+  color: #000 !important;
+  text-decoration: none !important;
+}
+
+body.mt-enabled .nt-home-update-now:hover:not(:disabled),
+body.mt-enabled .nt-home-update-recheck:hover:not(:disabled),
+body.mt-enabled a.nt-home-update-now:hover {
+  background: #d6d6d6 !important;
+  color: #000 !important;
+  filter: none !important;
+}
+
+body.mt-enabled .nt-home-update-link:hover {
+  background: transparent !important;
+  color: var(--sub, #d6d6d6) !important;
+}
+
+body.mt-enabled .nt-home-hero-actions button,
+body.mt-enabled .nt-home-community-open,
+body.mt-enabled .nt-home-getting-started button.is-primary,
+body.mt-enabled .nt-home-collection-tabs button.is-active,
+body.mt-enabled .nt-home-collection-tabs button[aria-selected="true"] {
+  background: #e0e0e0 !important;
+  color: #000 !important;
+  border-color: #d6d6d6 !important;
+}
+
+/* Restore Font Awesome inside chat messages.
+   Donsac sets font-family on .mes with !important, which blanks FA glyphs. */
+body.mt-enabled #chat .mes :is(.fa, .fas, .far, .fab, .fal, .fad, .fa-solid, .fa-regular, .fa-brands, .fa-light, .fa-duotone),
+body.mt-enabled #chat .mes .mes_edit_buttons :is(.fa, .fas, .far, .fab, .fal, .fad, .fa-solid, .fa-regular, .fa-brands),
+body.mt-enabled #chat .mes .mes_buttons :is(.fa, .fas, .far, .fab, .fal, .fad, .fa-solid, .fa-regular, .fa-brands),
+body.mt-enabled #chat .mes .extraMesButtons :is(.fa, .fas, .far, .fab, .fal, .fad, .fa-solid, .fa-regular, .fa-brands),
+body.mt-enabled #chat .mes .mes_reasoning_actions :is(.fa, .fas, .far, .fab, .fal, .fad, .fa-solid, .fa-regular, .fa-brands),
+body.mt-enabled #chat .mes .menu_button:is(.fa, .fas, .far, .fab, .fal, .fad, .fa-solid, .fa-regular, .fa-brands) {
+  font-family: var(--fa-style-family-solid, "Font Awesome 6 Free"), "Font Awesome 6 Pro", "Font Awesome 5 Free", "FontAwesome" !important;
+  font-style: normal !important;
+  font-variant: normal !important;
+  text-rendering: auto !important;
+  -webkit-font-smoothing: antialiased;
+  background-image: none !important;
+  color: #d6d6d6 !important;
+}
+
+body.mt-enabled #chat .mes :is(.fa, .fas, .fa-solid, .fad, .fa-duotone),
+body.mt-enabled #chat .mes .menu_button:is(.fa, .fas, .fa-solid) {
+  font-weight: 900 !important;
+}
+
+body.mt-enabled #chat .mes :is(.far, .fa-regular, .fab, .fa-brands),
+body.mt-enabled #chat .mes .menu_button:is(.far, .fa-regular, .fab, .fa-brands) {
+  font-weight: 400 !important;
+}
+
+body.mt-enabled #chat .mes :is(.fa, .fas, .far, .fab, .fal, .fad, .fa-solid, .fa-regular, .fa-brands)::before,
+body.mt-enabled #chat .mes .mes_edit_buttons :is(.fa, .fas, .far, .fab, .fa-solid, .fa-regular)::before,
+body.mt-enabled #chat .mes .menu_button:is(.fa, .fas, .far, .fab, .fa-solid, .fa-regular)::before {
+  display: inline-block !important;
+  font-family: inherit !important;
+  font-weight: inherit !important;
+  color: inherit !important;
+  background: none !important;
+}
+
+/* Do not replace pencil/ellipsis with remote background images (stock Donsac did) */
+body.mt-enabled #chat .mes :is(.fa-ellipsis-h, .fa-ellipsis, .fa-pencil-alt, .fa-pencil, .fa-check, .fa-xmark, .fa-times, .fa-arrow-up, .fa-arrow-down, .fa-trash, .fa-trash-alt) {
+  width: auto !important;
+  height: auto !important;
+  min-width: 1em;
+  background: none !important;
+  background-image: none !important;
+  opacity: 1 !important;
+}
+
+/* Keep message chrome grayscale — no olive/green borders from theme vars */
+body.mt-enabled #chat .mes,
+body.mt-enabled #chat .mes:hover,
+body.mt-enabled #chat .mes[is_user="true"] {
+  border-color: transparent !important;
+  outline-color: #d6d6d6 !important;
+  box-shadow: none !important;
+}
+
+body.mt-enabled #chat .mes .mes_edit_buttons > .menu_button,
+body.mt-enabled #chat .mes .mes_buttons > .menu_button,
+body.mt-enabled #chat .mes .extraMesButtons > .menu_button {
+  border-color: var(--subsub, #7a7a7a) !important;
+  background: transparent !important;
+  color: #d6d6d6 !important;
+}
+
+body.mt-enabled #chat .mes .mes_edit_buttons > .mes_edit_done.menu_button,
+body.mt-enabled #chat .mes .mes_edit_buttons > .mes_edit_delete.menu_button {
+  color: #d6d6d6 !important;
+  border-color: #a8a8a8 !important;
+  background: #141414 !important;
 }

@@ -6,7 +6,7 @@ Single SillyTavern extension = **NastyTavern UX** + **Donsac** black/grayscale s
 
 - Upstream features: [AnNastyLoneGirl/NastyTavern-UI](https://github.com/AnNastyLoneGirl/NastyTavern-UI) `0.1.14`
 - Style: Donsac theme (black / `#d6d6d6`, square chrome, Arsenal/Saira/Voltaire)
-- Fork version: `0.1.14-donsac.1`
+- Fork version: `0.1.14-donsac.2`
 - Repo: **private** — Install from URL may need GitHub auth (see below)
 
 ## Install
@@ -24,6 +24,10 @@ Single SillyTavern extension = **NastyTavern UX** + **Donsac** black/grayscale s
      into `data/<user>/extensions/` or `public/scripts/extensions/third-party/`.
    - Download a zip from GitHub while signed in, unpack so `manifest.json` is at the folder root, copy into the extensions directory.
 5. Reload SillyTavern and enable **NastyTavern × Donsac**.
+
+### Already installed?
+
+`git pull` (or re-copy the latest package), then **reload the extension / hard-refresh SillyTavern** so `style.css` updates. `auto_update` is off.
 
 ## Chat Appearance
 
