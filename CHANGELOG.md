@@ -4,6 +4,16 @@ All notable changes to NastyTavern UI are documented here.
 
 ---
 
+## v0.1.14-donsac.8
+
+### Fixed
+
+- Restore chat message meta boxes (token / `#id` / timer): visible under the character name with equal gaps, clear of the avatar. Stopped using a large negative `top` that pushed them off-screen; only truly `:empty` slots stay hidden.
+
+**Reload the extension / pull latest** after updating — `auto_update` is false.
+
+---
+
 ## v0.1.14-donsac.7
 
 ### Fixed

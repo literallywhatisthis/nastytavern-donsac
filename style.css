@@ -32834,24 +32834,32 @@ body.mt-enabled #chat .mes {
   --nt-mes-meta-gap: 6px;
   --nt-mes-meta-w: 4.25rem;
   --nt-mes-meta-left: 48.5%;
+  /* Name ::after sits at top:15px / 35px — keep meta inside the message, not above it. */
+  --nt-mes-meta-top: 56px;
+  overflow: visible !important;
 }
 
 body.mt-enabled #chat .mes .tokenCounterDisplay,
 body.mt-enabled #chat .mes .mesIDDisplay,
 body.mt-enabled #chat .mes .mes_timer {
-  position: absolute;
-  /* Raised under the name (~15px visual gap); still clear of the avatar. */
-  top: -118px;
+  position: absolute !important;
+  /* Under the character name (::after at top:15px), not off-screen above .mes. */
+  top: var(--nt-mes-meta-top) !important;
+  bottom: auto !important;
   left: auto;
-  right: auto;
-  z-index: 900;
+  right: auto !important;
+  z-index: 1200 !important;
   box-sizing: border-box;
-  width: var(--nt-mes-meta-w);
-  min-width: var(--nt-mes-meta-w);
-  max-width: var(--nt-mes-meta-w);
+  display: block !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+  width: var(--nt-mes-meta-w) !important;
+  min-width: var(--nt-mes-meta-w) !important;
+  max-width: var(--nt-mes-meta-w) !important;
+  height: auto !important;
+  min-height: 0 !important;
   font-family: 'Voltaire', sans-serif;
-  color: var(--sub);
-  opacity: 1;
+  color: var(--sub, #d6d6d6) !important;
   box-shadow: none;
   font-size: 11.5px;
   line-height: 1.2;
@@ -32859,42 +32867,37 @@ body.mt-enabled #chat .mes .mes_timer {
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  border: 1px solid var(--sub);
-  padding: 5px 6px;
+  border: 1px solid var(--sub, #d6d6d6) !important;
+  padding: 5px 6px !important;
   border-radius: 0;
   pointer-events: none;
+  clip: auto !important;
+  clip-path: none !important;
+  transform: none !important;
 }
 
-/* Hide bordered meta slots when the counter is off / empty (no tofu box). */
+/* Only hide truly empty slots — never collapse boxes that have content. */
 body.mt-enabled #chat .mes .tokenCounterDisplay:empty,
 body.mt-enabled #chat .mes .mesIDDisplay:empty,
 body.mt-enabled #chat .mes .mes_timer:empty {
   display: none !important;
-  border: 0 !important;
-  padding: 0 !important;
-  width: 0 !important;
-  min-width: 0 !important;
-  height: 0 !important;
-  overflow: hidden !important;
-  visibility: hidden !important;
-  pointer-events: none !important;
 }
 
 /* LTR under the name: token → #id → timer, equal fixed gaps, never over the avatar. */
 body.mt-enabled #chat .mes .tokenCounterDisplay {
-  left: var(--nt-mes-meta-left);
+  left: var(--nt-mes-meta-left) !important;
 }
 body.mt-enabled #chat .mes .mesIDDisplay {
-  left: calc(var(--nt-mes-meta-left) + var(--nt-mes-meta-w) + var(--nt-mes-meta-gap));
+  left: calc(var(--nt-mes-meta-left) + var(--nt-mes-meta-w) + var(--nt-mes-meta-gap)) !important;
 }
 body.mt-enabled #chat .mes .mes_timer {
-  left: calc(var(--nt-mes-meta-left) + 2 * (var(--nt-mes-meta-w) + var(--nt-mes-meta-gap)));
+  left: calc(var(--nt-mes-meta-left) + 2 * (var(--nt-mes-meta-w) + var(--nt-mes-meta-gap))) !important;
 }
 
 /* Avatar stays above meta if anything still collides. */
 body.mt-enabled #chat .mes .avatar,
 body.mt-enabled #chat .mes .mesAvatarWrapper {
-  z-index: 1100;
+  z-index: 1300;
 }
 
 body.mt-enabled #chat .mes .mes_text {
@@ -34297,4 +34300,46 @@ html body.mt-enabled .mt-connection-dot {
 }
 html body.mt-enabled .mt-connection.is-offline .mt-connection-dot {
   box-shadow: 0 0 0 4px rgba(255, 105, 120, .1) !important;
+}
+
+/* ---- Meta restore (0.1.14-donsac.8): token / #id / timer visible under name ----
+   Previous negative top (-118px) pushed boxes above .mes and off-screen.
+   Keep them inside the message under ::after name; only :empty slots hide. */
+html body.mt-enabled #chat .mes {
+  overflow: visible !important;
+}
+html body.mt-enabled #chat .mes .tokenCounterDisplay:not(:empty),
+html body.mt-enabled #chat .mes .mesIDDisplay:not(:empty),
+html body.mt-enabled #chat .mes .mes_timer:not(:empty) {
+  display: block !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+  position: absolute !important;
+  top: 56px !important;
+  bottom: auto !important;
+  right: auto !important;
+  z-index: 1200 !important;
+  width: 4.25rem !important;
+  min-width: 4.25rem !important;
+  max-width: 4.25rem !important;
+  height: auto !important;
+  border: 1px solid var(--sub, #d6d6d6) !important;
+  padding: 5px 6px !important;
+  clip: auto !important;
+  clip-path: none !important;
+  transform: none !important;
+}
+html body.mt-enabled #chat .mes .tokenCounterDisplay:not(:empty) {
+  left: 48.5% !important;
+}
+html body.mt-enabled #chat .mes .mesIDDisplay:not(:empty) {
+  left: calc(48.5% + 4.25rem + 6px) !important;
+}
+html body.mt-enabled #chat .mes .mes_timer:not(:empty) {
+  left: calc(48.5% + 2 * (4.25rem + 6px)) !important;
+}
+html body.mt-enabled #chat .mes .tokenCounterDisplay:empty,
+html body.mt-enabled #chat .mes .mesIDDisplay:empty,
+html body.mt-enabled #chat .mes .mes_timer:empty {
+  display: none !important;
 }
