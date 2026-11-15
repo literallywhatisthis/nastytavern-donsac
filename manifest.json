@@ -6,16 +6,16 @@
   "js": "index.js",
   "css": "style.css",
   "author": "AnNastyLoneGirl + OpenAI; Donsac restyle fork",
-  "version": "0.1.14-donsac.3",
+  "version": "0.1.14-donsac.4",
   "homePage": "https://github.com/literallywhatisthis/nastytavern-donsac",
   "auto_update": false,
   "minimum_client_version": "1.18.0",
-  "description": "Single-package fork of NastyTavern UI with Donsac black/grayscale styling baked in (Home, Story Timeline, NT card fields + Donsac chrome). Disable stock NastyTavern UI if both are installed.",
+  "description": "Single-package fork of NastyTavern UI with Donsac black/muted-blue styling baked in (Home, Story Timeline, NT card fields + Donsac chrome). Disable stock NastyTavern UI if both are installed.",
   "hooks": {
     "activate": "onActivate",
     "enable": "onEnable",
     "disable": "onDisable",
     "clean": "onClean"
   },
-  "revision": 117
+  "revision": 118
 }

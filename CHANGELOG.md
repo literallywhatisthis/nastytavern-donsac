@@ -4,6 +4,23 @@ All notable changes to NastyTavern UI are documented here.
 
 ---
 
+## v0.1.14-donsac.4
+
+### Changed
+
+- Accent color is now muted steel blue (`#7a9bb8`) for `--mt-accent`, primary buttons, active nav, Share/community accents, links, and slider thumbs — not neon green and not gray-as-accent. Backgrounds stay black; body text stays gray.
+
+### Fixed
+
+- Message meta boxes (token / `#id` / timer): equal fixed gaps and stable right offsets (no more uneven spacing from content-width boxes).
+- Edit Character: restore Font Awesome toolbar icons and the tags-search glyph (hollow squares); remapped Share / person / slider lime-green leftovers to Donsac blue.
+- All range inputs: thin gray track (`#7a7a7a`) with square bordered muted-blue thumb (Talkativeness and character-editor sliders included).
+- Lorebooks nav: mount without flashing Chat (claim view + cover `#sheld` while World Info initializes).
+
+**Reload the extension / pull latest** after updating — `auto_update` is false.
+
+---
+
 ## v0.1.14-donsac.3
 
 ### Fixed

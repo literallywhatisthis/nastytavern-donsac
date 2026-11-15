@@ -333,7 +333,7 @@ export class NastyTavern {
         await this.cleanupCharacterWorkspace();
         this.restoreAllMobileChatMessageBlocks();
         document.querySelector('[data-nt-chat-character-context]')?.remove();
-        document.body?.classList.remove('mt-enabled','mt-density-compact','mt-density-comfortable','mt-nav-compact','mt-nav-hidden','mt-appbar-minimized','mt-focus-mode','mt-hide-native-topbar','mt-dock-panels','mt-motion','mt-panel-switching','nt-mobile-nav-forced','nt-character-workspace-open','nt-character-create-modal-open','nt-group-modal-open','nt-persona-workspace-open','nt-background-workspace-open','nt-lorebook-workspace-open','nt-extensions-modal-open','nt-chat-tools-hub-open','nt-native-side-panel-open','nt-native-side-panel-maximized');
+        document.body?.classList.remove('mt-enabled','mt-density-compact','mt-density-comfortable','mt-nav-compact','mt-nav-hidden','mt-appbar-minimized','mt-focus-mode','mt-hide-native-topbar','mt-dock-panels','mt-motion','mt-panel-switching','nt-mobile-nav-forced','nt-character-workspace-open','nt-character-create-modal-open','nt-group-modal-open','nt-persona-workspace-open','nt-background-workspace-open','nt-lorebook-workspace-open','nt-lorebook-workspace-opening','nt-extensions-modal-open','nt-chat-tools-hub-open','nt-native-side-panel-open','nt-native-side-panel-maximized');
         document.querySelectorAll('.mt-native-panel,.mt-drawer-content,.mt-inline-card,.mt-popup-surface').forEach(el => el.classList.remove('mt-native-panel','mt-drawer-content','mt-inline-card','mt-popup-surface'));
     }
 
@@ -1052,28 +1052,39 @@ export class NastyTavern {
         }
         if (view === 'lorebooks' && this.isLorebookWorkspaceOpen()) await this.closeLorebookWorkspace({ restoreFocus: false });
 
+        // Switch the shell view first so chat cannot flash while the provider mounts.
+        this.setView(view, provider.label);
+        if (view === 'lorebooks') document.body?.classList.add('nt-lorebook-workspace-opening', 'mt-panel-switching');
+
         const existing = this.findThirdPartyWorkspaceSurface(view);
         const panel = document.querySelector(provider.panelSelector);
         if (existing || this.elementIsVisible(panel)) {
             this.decorateThirdPartyWorkspace(view);
-            this.setView(view, provider.label);
+            document.body?.classList.remove('nt-lorebook-workspace-opening', 'mt-panel-switching');
             return true;
         }
 
         const trigger = provider.triggerSelectors.map(selector => document.querySelector(selector)).find(Boolean);
-        if (!(trigger instanceof HTMLElement)) return false;
+        if (!(trigger instanceof HTMLElement)) {
+            document.body?.classList.remove('nt-lorebook-workspace-opening', 'mt-panel-switching');
+            return false;
+        }
 
         this.thirdPartyWorkspacePassThrough = view;
         try {
             trigger.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true, view: window }));
             const opened = await this.waitForThirdPartyWorkspace(view);
-            if (!opened) return false;
+            if (!opened) {
+                this.setView('chat');
+                return false;
+            }
             this.decorateThirdPartyWorkspace(view);
             this.setView(view, provider.label);
             requestAnimationFrame(() => this.decorateThirdPartyWorkspace(view));
             return true;
         } finally {
             this.thirdPartyWorkspacePassThrough = '';
+            document.body?.classList.remove('nt-lorebook-workspace-opening', 'mt-panel-switching');
         }
     }
 
@@ -3804,6 +3815,12 @@ export class NastyTavern {
         if (this.lorebookWorkspaceOpening) return false;
 
         this.lorebookWorkspaceOpening = true;
+        // Claim the Lorebooks view and cover chat immediately so the previous
+        // view cannot flash while native World Info initializes.
+        this.setView('lorebooks');
+        const root = this.ensureLorebookWorkspaceRoot();
+        root.hidden = false;
+        document.body?.classList.add('nt-lorebook-workspace-open', 'nt-lorebook-workspace-opening');
         try {
             if (this.isGroupModalOpen()) await this.closeGroupModal({ restoreFocus: false, reopenCharacters: false });
             if (this.isCharacterCreateModalOpen()) await this.closeCharacterCreateModal({ restoreFocus: false });
@@ -3814,6 +3831,7 @@ export class NastyTavern {
             const opener = document.activeElement instanceof HTMLElement ? document.activeElement : null;
             let result;
             this.lorebookNativeTogglePassThrough = true;
+            document.body?.classList.add('mt-panel-switching');
             try {
                 result = await this.dom.click('worldInfo', ['World Info', 'Lorebook']);
             } finally {
@@ -3822,18 +3840,21 @@ export class NastyTavern {
 
             const native = await this.waitForNativeLorebookContent();
             if (!native || (!result.ok && !native.panel)) {
+                root.hidden = true;
+                document.body?.classList.remove('nt-lorebook-workspace-open');
+                this.setView('chat');
                 this.toast(t('Could not open Lorebooks.'));
                 return false;
             }
 
-            const root = this.ensureLorebookWorkspaceRoot();
             if (!this.mountNativeLorebookContent(root, { opener })) {
+                root.hidden = true;
+                document.body?.classList.remove('nt-lorebook-workspace-open');
+                this.setView('chat');
                 this.toast(t('Could not open Lorebooks.'));
                 return false;
             }
 
-            root.hidden = false;
-            document.body?.classList.add('nt-lorebook-workspace-open');
             this.setLorebookSidebarHidden(false);
             this.lorebookManager?.showGallery?.();
             this.setView('lorebooks');
@@ -3841,6 +3862,7 @@ export class NastyTavern {
         } finally {
             this.lorebookNativeTogglePassThrough = false;
             this.lorebookWorkspaceOpening = false;
+            document.body?.classList.remove('nt-lorebook-workspace-opening', 'mt-panel-switching');
         }
     }
 
@@ -3856,7 +3878,7 @@ export class NastyTavern {
             this.lorebookNativeTogglePassThrough = false;
         }
 
-        document.body?.classList.remove('nt-lorebook-workspace-open');
+        document.body?.classList.remove('nt-lorebook-workspace-open', 'nt-lorebook-workspace-opening', 'mt-panel-switching');
         return true;
     }
 
@@ -3865,7 +3887,7 @@ export class NastyTavern {
         this.lorebookWorkspaceRoot?.remove();
         this.lorebookWorkspaceRoot = null;
         document.querySelector('#nt-lorebook-workspace')?.remove();
-        document.body?.classList.remove('nt-lorebook-workspace-open');
+        document.body?.classList.remove('nt-lorebook-workspace-open', 'nt-lorebook-workspace-opening', 'mt-panel-switching');
     }
 
     ensureGroupModalRoot() {
@@ -6582,7 +6604,7 @@ export class NastyTavern {
         if (view === 'personas' && this.isPersonaWorkspaceOpen()) return true;
         if (view === 'characters' && this.isCharacterWorkspaceOpen()) return true;
         if (view === 'backgrounds' && this.isBackgroundWorkspaceOpen()) return true;
-        if (view === 'lorebooks' && this.isLorebookWorkspaceOpen()) return true;
+        if (view === 'lorebooks' && (this.isLorebookWorkspaceOpen() || this.lorebookWorkspaceOpening)) return true;
         const selector = this.nativePanelForView(view);
         if (!selector) return view === 'chat';
         const panel = document.querySelector(selector);
