@@ -32743,14 +32743,19 @@ body.mt-enabled #chat .mes[is_user="true"] {
 }
 
 body.mt-enabled #chat .mes .mesAvatarWrapper {
+  /* Pin to .mes top so absolute meta (top:56px) sits under the name, not on prose.
+     Meta boxes are DOM children of this wrapper (ST message template). */
   position: absolute;
+  top: 0;
   height: 100px;
   z-index: 10;
+  overflow: visible;
 }
 
 body.mt-enabled #chat .mes .avatar {
   position: relative;
-  top: -180px;
+  /* Wrapper is at mes top — keep the avatar in the header band (not top:-180 above .mes). */
+  top: 15px;
   left: -90px;
   z-index: 1000;
 }
@@ -32830,13 +32835,13 @@ body.mt-enabled #chat .mes .timestamp::before {
 }
 
 body.mt-enabled #chat .mes {
-  /* Containing block for absolute meta boxes + name ::after. */
+  /* Containing block for name ::after; meta boxes live under .mesAvatarWrapper. */
   position: relative !important;
   /* Equal gaps; row starts under the name (clear of the 90px avatar at left:-90). */
   --nt-mes-meta-gap: 6px;
   --nt-mes-meta-w: 4.25rem;
   --nt-mes-meta-left: 48.5%;
-  /* Name ::after sits at top:15px / 35px — keep meta inside the message, not above it. */
+  /* Pre-donsac.10 later-message header placement. */
   --nt-mes-meta-top: 56px;
   overflow: visible !important;
 }
@@ -32845,7 +32850,7 @@ body.mt-enabled #chat .mes .tokenCounterDisplay,
 body.mt-enabled #chat .mes .mesIDDisplay,
 body.mt-enabled #chat .mes .mes_timer {
   position: absolute !important;
-  /* Under the character name (::after at top:15px), not off-screen above .mes. */
+  /* Later messages: under the name. First/greeting overrides below. */
   top: var(--nt-mes-meta-top) !important;
   bottom: auto !important;
   left: auto;
@@ -34304,9 +34309,9 @@ html body.mt-enabled .mt-connection.is-offline .mt-connection-dot {
   box-shadow: 0 0 0 4px rgba(255, 105, 120, .1) !important;
 }
 
-/* ---- Meta restore: token / #id / timer visible under name ----
-   .mes must be position:relative so absolute meta boxes anchor per message
-   (not the chat pane). No negative top. Only :empty slots hide. */
+/* ---- Meta restore: later messages = pre-donsac.10 header placement ----
+   ST DOM: .mes > .mesAvatarWrapper > (.avatar | .mesIDDisplay | .mes_timer | .tokenCounterDisplay)
+   Meta CB is .mesAvatarWrapper (position:absolute). top:56px is the later-message layout. */
 html body.mt-enabled #chat .mes {
   position: relative !important;
   overflow: visible !important;
@@ -34347,42 +34352,33 @@ html body.mt-enabled #chat .mes .mes_timer:empty {
   display: none !important;
 }
 
-/* ---- First/greeting message only (mesid 0 / first .mes) ----
-   Nested .mes_block (or similar) can become the absolute containing block, so
-   top:56px lands on the body text instead of the header under the name.
-   Later messages are already correct — do not change their meta top.
-   Neutralize nested positioning so meta anchors to .mes; keep positive top. */
-html body.mt-enabled #chat .mes[mesid="0"],
-html body.mt-enabled #chat .mes:first-child,
-html body.mt-enabled #chat .mes:first-of-type {
+/* ---- First/greeting only (mesid="0") — cannot match later messages ----
+   Exact selector used:
+     html body.mt-enabled #chat .mes[mesid="0"] > .mesAvatarWrapper > .tokenCounterDisplay:not(:empty)
+     (same for .mesIDDisplay / .mes_timer)
+   ST DOM: meta is a direct child of .mesAvatarWrapper (not .mes_block / .ch_name).
+   donsac.10 neutralized the wrong ancestors and used :first-child/:first-of-type (over-matched later).
+   Pin the greeting avatar wrapper to the .mes top so top:56px is under name ::after (positive top). */
+html body.mt-enabled #chat .mes[mesid="0"] {
   position: relative !important;
   overflow: visible !important;
 }
-html body.mt-enabled #chat .mes[mesid="0"] > .mes_block,
-html body.mt-enabled #chat .mes:first-child > .mes_block,
-html body.mt-enabled #chat .mes:first-of-type > .mes_block,
-html body.mt-enabled #chat .mes[mesid="0"] .ch_name,
-html body.mt-enabled #chat .mes:first-child .ch_name,
-html body.mt-enabled #chat .mes:first-of-type .ch_name {
-  position: static !important;
-  transform: none !important;
-  filter: none;
-  contain: none;
+html body.mt-enabled #chat .mes[mesid="0"] > .mesAvatarWrapper {
+  position: absolute !important;
+  top: 0 !important;
+  overflow: visible !important;
 }
-html body.mt-enabled #chat .mes[mesid="0"] .tokenCounterDisplay:not(:empty),
-html body.mt-enabled #chat .mes[mesid="0"] .mesIDDisplay:not(:empty),
-html body.mt-enabled #chat .mes[mesid="0"] .mes_timer:not(:empty),
-html body.mt-enabled #chat .mes:first-child .tokenCounterDisplay:not(:empty),
-html body.mt-enabled #chat .mes:first-child .mesIDDisplay:not(:empty),
-html body.mt-enabled #chat .mes:first-child .mes_timer:not(:empty),
-html body.mt-enabled #chat .mes:first-of-type .tokenCounterDisplay:not(:empty),
-html body.mt-enabled #chat .mes:first-of-type .mesIDDisplay:not(:empty),
-html body.mt-enabled #chat .mes:first-of-type .mes_timer:not(:empty) {
+html body.mt-enabled #chat .mes[mesid="0"] > .mesAvatarWrapper > .avatar {
+  /* Wrapper is at mes top; drop the -180px lift so the avatar stays in-header (not above .mes). */
+  top: 15px !important;
+}
+html body.mt-enabled #chat .mes[mesid="0"] > .mesAvatarWrapper > .tokenCounterDisplay:not(:empty),
+html body.mt-enabled #chat .mes[mesid="0"] > .mesAvatarWrapper > .mesIDDisplay:not(:empty),
+html body.mt-enabled #chat .mes[mesid="0"] > .mesAvatarWrapper > .mes_timer:not(:empty) {
   display: block !important;
   visibility: visible !important;
   opacity: 1 !important;
   position: absolute !important;
-  /* Header band under ::after name (top:15px), above banner + body text */
   top: 56px !important;
   bottom: auto !important;
   right: auto !important;
@@ -34397,18 +34393,12 @@ html body.mt-enabled #chat .mes:first-of-type .mes_timer:not(:empty) {
   clip-path: none !important;
   transform: none !important;
 }
-html body.mt-enabled #chat .mes[mesid="0"] .tokenCounterDisplay:not(:empty),
-html body.mt-enabled #chat .mes:first-child .tokenCounterDisplay:not(:empty),
-html body.mt-enabled #chat .mes:first-of-type .tokenCounterDisplay:not(:empty) {
+html body.mt-enabled #chat .mes[mesid="0"] > .mesAvatarWrapper > .tokenCounterDisplay:not(:empty) {
   left: 48.5% !important;
 }
-html body.mt-enabled #chat .mes[mesid="0"] .mesIDDisplay:not(:empty),
-html body.mt-enabled #chat .mes:first-child .mesIDDisplay:not(:empty),
-html body.mt-enabled #chat .mes:first-of-type .mesIDDisplay:not(:empty) {
+html body.mt-enabled #chat .mes[mesid="0"] > .mesAvatarWrapper > .mesIDDisplay:not(:empty) {
   left: calc(48.5% + 4.25rem + 6px) !important;
 }
-html body.mt-enabled #chat .mes[mesid="0"] .mes_timer:not(:empty),
-html body.mt-enabled #chat .mes:first-child .mes_timer:not(:empty),
-html body.mt-enabled #chat .mes:first-of-type .mes_timer:not(:empty) {
+html body.mt-enabled #chat .mes[mesid="0"] > .mesAvatarWrapper > .mes_timer:not(:empty) {
   left: calc(48.5% + 2 * (4.25rem + 6px)) !important;
 }
