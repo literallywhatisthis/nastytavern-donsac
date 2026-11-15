@@ -32835,9 +32835,9 @@ body.mt-enabled #chat .mes {
   --nt-mes-meta-gap: 6px;
   --nt-mes-meta-w: 4.25rem;
   --nt-mes-meta-left: 48.5%;
-  /* Known-good header band (empty-meta / pre-56px regressions): under name, above prose.
-     Meta lives in .mesAvatarWrapper; -95px is down from the name, not on body text. */
-  --nt-mes-meta-top: -95px;
+  /* Header band under the name, above the calligraphy banner (not on prose).
+     -95px sat on the banner; -125px is the known Donsac under-name slot. */
+  --nt-mes-meta-top: -125px;
   overflow: visible !important;
 }
 
@@ -34304,10 +34304,9 @@ html body.mt-enabled .mt-connection.is-offline .mt-connection-dot {
   box-shadow: 0 0 0 4px rgba(255, 105, 120, .1) !important;
 }
 
-/* ---- Meta boxes: same header placement for every .mes (restore known-good) ----
+/* ---- Meta boxes: same header placement for every .mes ----
    ST DOM: .mes > .mesAvatarWrapper > (.avatar | meta). CB = .mesAvatarWrapper.
-   top:-95px was the last good under-name / above-prose layout (empty-meta era).
-   Same for first + later — no mesid / :first-child specials. */
+   Nudge from -95px (on banner) up to -125px (under name, above banner). */
 html body.mt-enabled #chat .mes {
   position: relative !important;
   overflow: visible !important;
@@ -34319,7 +34318,7 @@ html body.mt-enabled #chat .mes .mes_timer:not(:empty) {
   visibility: visible !important;
   opacity: 1 !important;
   position: absolute !important;
-  top: -95px !important;
+  top: -125px !important;
   bottom: auto !important;
   right: auto !important;
   z-index: 1200 !important;

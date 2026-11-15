@@ -4,6 +4,16 @@ All notable changes to NastyTavern UI are documented here.
 
 ---
 
+## v0.1.14-donsac.13
+
+### Fixed
+
+- Chat meta boxes: nudge `top` from `-95px` to `-125px` so token / `#id` / timer sit in the empty header gap under the name and above the calligraphy banner (same for every message; not on prose).
+
+**Reload the extension / pull latest** after updating — `auto_update` is false.
+
+---
+
 ## v0.1.14-donsac.12
 
 ### Fixed
