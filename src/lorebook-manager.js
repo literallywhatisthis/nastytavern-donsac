@@ -1,0 +1,1124 @@
+import { icons } from './icons.js';
+import { saveSettings } from './settings.js';
+import { t } from './i18n.js';
+
+const clean = value => String(value ?? '').trim();
+const esc = value => clean(value)
+    .replaceAll('&', '&amp;')
+    .replaceAll('<', '&lt;')
+    .replaceAll('>', '&gt;')
+    .replaceAll('"', '&quot;')
+    .replaceAll("'", '&#039;');
+const normalized = value => clean(value).toLocaleLowerCase();
+
+function contextSafe() {
+    try { return window.SillyTavern?.getContext?.() || {}; }
+    catch { return {}; }
+}
+
+function asArray(value) {
+    return Array.isArray(value) ? value : value == null ? [] : [value];
+}
+
+export class LorebookManager {
+    constructor(settings, toast, hooks = {}) {
+        this.settings = settings;
+        this.toast = toast;
+        this.hooks = hooks;
+        this.root = null;
+        this.panel = null;
+        this.host = null;
+        this.surface = null;
+        this.gallery = null;
+        this.editorView = null;
+        this.editorHeader = null;
+        this.nativeHost = null;
+        this.search = '';
+        this.filter = 'all';
+        this.sort = this.settings?.lorebookStudio?.sort || 'az';
+        this.page = 1;
+        this.pageSize = 40;
+        this.books = [];
+        this.bindings = new Map();
+        this.currentBook = '';
+        this.currentEntryUid = '';
+        this.view = 'gallery';
+        this.currentBookData = null;
+        this.renamePending = false;
+        this.refreshQueued = false;
+        this.globalTogglePending = false;
+        this.selectObserver = null;
+        this.worldInfoEvent = null;
+        this.boundWorldInfoChange = () => this.scheduleRefresh();
+        this.boundClick = event => this.onClick(event);
+        this.boundInput = event => this.onInput(event);
+        this.boundChange = event => this.onChange(event);
+        this.boundKeydown = event => this.onKeydown(event);
+    }
+
+    async mount(root, panel) {
+        this.unmount({ keepNative: true });
+        this.root = root;
+        this.panel = panel;
+        this.host = root?.querySelector?.('[data-nt-lorebook-host]') || null;
+        if (!this.root || !this.panel || !this.host) return false;
+
+        this.ensureSurface();
+        this.view = 'gallery';
+        this.root.classList.add('nt-lorebook-gallery-ready', 'is-gallery-view');
+        this.root.classList.remove('is-editor-view');
+        this.replaceSurfaceWith(this.gallery);
+        this.gallery.hidden = false;
+        this.editorView.hidden = true;
+        this.editorView?.classList.remove('is-loading');
+        this.editorView?.setAttribute('aria-busy', 'false');
+        this.surface.addEventListener('click', this.boundClick);
+        this.surface.addEventListener('input', this.boundInput);
+        this.surface.addEventListener('change', this.boundChange);
+        this.surface.addEventListener('keydown', this.boundKeydown);
+
+        const select = this.panel.querySelector('#world_editor_select');
+        if (select) {
+            this.selectObserver = new MutationObserver(() => this.scheduleRefresh());
+            this.selectObserver.observe(select, { childList: true });
+        }
+        // Native World Info changes (including /world and the original panel)
+        // are the source of truth. Keep the visible switches synchronized.
+        const context = contextSafe();
+        const eventType = (context.eventTypes || context.event_types)?.WORLDINFO_SETTINGS_UPDATED;
+        if (eventType && context.eventSource?.on) {
+            context.eventSource.on(eventType, this.boundWorldInfoChange);
+            this.worldInfoEvent = { source: context.eventSource, type: eventType };
+        }
+
+        await this.refresh();
+        return true;
+    }
+
+    unmount({ keepNative = false } = {}) {
+        this.selectObserver?.disconnect();
+        this.selectObserver = null;
+        if (this.worldInfoEvent) {
+            this.worldInfoEvent.source.off?.(this.worldInfoEvent.type, this.boundWorldInfoChange);
+            this.worldInfoEvent = null;
+        }
+        if (this.surface) {
+            this.surface.removeEventListener('click', this.boundClick);
+            this.surface.removeEventListener('input', this.boundInput);
+            this.surface.removeEventListener('change', this.boundChange);
+            this.surface.removeEventListener('keydown', this.boundKeydown);
+            // The editable Lorebook name belongs to NastyTavern. Put it back
+            // in NastyTavern's header before returning the native World Info
+            // panel to SillyTavern so no extension-owned input leaks into the
+            // restored native surface.
+            this.restoreNameInputToHeader();
+
+            // Restore the native editor to its host before removing the NastyTavern
+            // surface. It remains connected through both gallery and editor views.
+            if (this.panel && this.nativeHost?.contains(this.panel) && this.host?.isConnected) {
+                if (this.surface?.parentNode === this.host) this.host.insertBefore(this.panel, this.surface);
+                else this.host.append(this.panel);
+            }
+            this.surface.remove();
+        }
+        this.root?.classList.remove('nt-lorebook-gallery-ready', 'is-gallery-view', 'is-editor-view', 'is-native-view');
+        if (!keepNative) {
+            this.currentBook = '';
+            this.currentEntryUid = '';
+            this.currentBookData = null;
+        }
+        this.view = 'gallery';
+        this.surface = null;
+        this.gallery = null;
+        this.editorView = null;
+        this.editorHeader = null;
+        this.nativeHost = null;
+        this.root = null;
+        this.panel = null;
+        this.host = null;
+    }
+
+    ensureSurface() {
+        let surface = this.host.querySelector(':scope > .nt-lorebook-library-surface');
+        if (!surface) {
+            surface = document.createElement('div');
+            surface.className = 'nt-lorebook-library-surface';
+            surface.innerHTML = `
+                <section class="nt-lorebook-library" data-nt-lorebook-gallery aria-label="${esc(t('Lorebooks'))}"></section>
+                <section class="nt-lorebook-editor-view" data-nt-lorebook-editor-view aria-label="${esc(t('Lorebook editor'))}" hidden>
+                    <header class="nt-lorebook-editor-bar" data-nt-lorebook-editor-bar>
+                        <button type="button" class="nt-control-btn nt-lorebook-back" data-nt-lorebook-back>${icons.arrowLeft}<span>${esc(t('Lorebooks'))}</span></button>
+                        <div class="nt-lorebook-editor-heading">
+                            <input type="text" class="text_pole nt-lorebook-name-input" data-nt-lorebook-name aria-label="${esc(t('Lorebook name'))}" autocomplete="off" spellcheck="false">
+                        </div>
+                        <span class="nt-lorebook-native-title">${esc(t('Native World Info'))}</span>
+                    </header>
+                    <div class="nt-lorebook-native-host" data-nt-lorebook-native-host></div>
+                </section>`;
+            this.host.insertBefore(surface, this.panel);
+        }
+        this.surface = surface;
+        this.gallery = surface.querySelector('[data-nt-lorebook-gallery]');
+        this.editorView = surface.querySelector('[data-nt-lorebook-editor-view]');
+        this.editorHeader = surface.querySelector('[data-nt-lorebook-editor-bar]');
+        this.nativeHost = surface.querySelector('[data-nt-lorebook-native-host]');
+        if (this.nativeHost && this.panel.parentElement !== this.nativeHost) this.nativeHost.append(this.panel);
+    }
+
+    replaceSurfaceWith(node) {
+        if (!this.surface || !this.gallery || !this.editorView ||
+            (node !== this.gallery && node !== this.editorView)) return false;
+        // CRITICAL: #world_info must remain in the *connected* document even
+        // while the gallery is visible. SillyTavern reads it with the global
+        // $('#world_info') selector whenever any global lorebook is changed.
+        // Removing the editor from DOM here made that selector empty, silently
+        // clearing the native global selection and eventually saving [].
+        // CSS [hidden] keeps the inactive editor entirely out of the layout,
+        // so only one view is visible without disconnecting native controls.
+        if (this.surface.children.length !== 2 ||
+            this.surface.firstElementChild !== this.gallery ||
+            this.surface.lastElementChild !== this.editorView) {
+            this.surface.replaceChildren(this.gallery, this.editorView);
+        }
+        return true;
+    }
+
+    scheduleRefresh() {
+        if (this.refreshQueued) return;
+        this.refreshQueued = true;
+        requestAnimationFrame(() => {
+            this.refreshQueued = false;
+            void this.refresh();
+        });
+    }
+
+    async refresh() {
+        if (!this.gallery || !this.panel) return;
+        this.bindings = await this.buildBindingIndex();
+        this.books = this.readBooks();
+        const pages = Math.max(1, Math.ceil(this.filteredBooks().length / this.pageSize));
+        this.page = Math.max(1, Math.min(this.page, pages));
+        this.renderGallery();
+    }
+
+    syncNativeWorldSelectors(worldInfoModule, editorSelection = '') {
+        if (!this.panel) return;
+        const names = Array.isArray(worldInfoModule?.world_names) ? worldInfoModule.world_names : [];
+        const selectedWorlds = Array.isArray(worldInfoModule?.selected_world_info) ? worldInfoModule.selected_world_info : [];
+        const editorSelect = this.panel.querySelector('#world_editor_select');
+        const globalSelect = this.panel.querySelector('#world_info');
+        const previousEditorName = clean(editorSelection)
+            || clean(editorSelect?.selectedOptions?.[0]?.textContent);
+
+        const rebuild = (select, selectedNames = []) => {
+            if (!select) return;
+            for (const option of Array.from(select.options || [])) {
+                if (clean(option.value)) option.remove();
+            }
+            names.forEach((name, index) => {
+                const option = new Option(name, String(index));
+                option.selected = selectedNames.includes(name);
+                select.append(option);
+            });
+        };
+
+        rebuild(globalSelect, selectedWorlds);
+        rebuild(editorSelect, previousEditorName ? [previousEditorName] : []);
+    }
+
+    readBooks() {
+        const select = this.panel?.querySelector('#world_editor_select');
+        if (!select) return [];
+        const seen = new Set();
+        const books = [];
+        for (const option of select.options || []) {
+            const nativeValue = clean(option.value);
+            const name = clean(option.textContent) || nativeValue;
+            if (!name || seen.has(name)) continue;
+            seen.add(name);
+            const binding = this.bindings.get(name) || this.emptyBinding();
+            // SillyTavern may use an option index/value internally while the
+            // actual Lorebook identity is the visible World Info name. Keep
+            // both so NastyTavern can select the native option without leaking
+            // values such as "0" into headings, bindings or save/load calls.
+            books.push({ id: name, name, nativeValue: nativeValue || name, binding });
+        }
+        return books;
+    }
+
+    emptyBinding() {
+        return { global: false, chat: false, characters: [], personas: [], cover: '', labels: [] };
+    }
+
+    bindingFor(map, name) {
+        const key = clean(name);
+        if (!key) return null;
+        if (!map.has(key)) map.set(key, this.emptyBinding());
+        return map.get(key);
+    }
+
+    characterAvatarUrl(avatar) {
+        const file = clean(avatar);
+        if (!file) return '';
+        const context = contextSafe();
+        try {
+            const url = context?.getThumbnailUrl?.('avatar', file);
+            if (url) return String(url);
+        } catch (_) {}
+        return `/thumbnail?type=avatar&file=${encodeURIComponent(file)}`;
+    }
+
+    personaAvatarUrl(id) {
+        const file = clean(id);
+        return file ? `/User Avatars/${encodeURIComponent(file)}` : '';
+    }
+
+    async buildBindingIndex() {
+        const map = new Map();
+        const context = contextSafe();
+        const activeSelect = this.panel?.querySelector('#world_info');
+        let selectedGlobal = new Set(
+            activeSelect ? Array.from(activeSelect.selectedOptions || [])
+                .map(option => clean(option.textContent) || clean(option.value))
+                .filter(Boolean) : []
+        );
+
+        try {
+            const module = await import('/scripts/world-info.js');
+            // Prefer SillyTavern's live selection: a book removed through
+            // the native UI must not remain ON because of a stale DOM option.
+            if (Array.isArray(module?.selected_world_info)) {
+                selectedGlobal = new Set(module.selected_world_info.map(clean).filter(Boolean));
+            }
+            const charLore = module?.world_info?.charLore || module?.worldInfo?.charLore || [];
+            const characters = Array.isArray(context.characters) ? context.characters : [];
+            for (const item of asArray(charLore)) {
+                const target = clean(item?.name);
+                const char = characters.find(character => clean(character?.avatar) === target || clean(character?.name) === target);
+                const label = clean(char?.name) || target || t('Character');
+                const cover = this.characterAvatarUrl(char?.avatar);
+                for (const name of asArray(item?.extraBooks).map(clean).filter(Boolean)) {
+                    const binding = this.bindingFor(map, name);
+                    if (!binding.characters.includes(label)) binding.characters.push(label);
+                    if (!binding.cover && cover) binding.cover = cover;
+                }
+            }
+        } catch (_) {}
+
+        for (const name of selectedGlobal) {
+            const binding = this.bindingFor(map, name);
+            if (binding) binding.global = true;
+        }
+
+        const characters = Array.isArray(context.characters) ? context.characters : [];
+        for (const character of characters) {
+            const name = clean(character?.data?.extensions?.world || character?.extensions?.world || character?.world);
+            if (!name) continue;
+            const binding = this.bindingFor(map, name);
+            const label = clean(character?.name) || t('Character');
+            if (!binding.characters.includes(label)) binding.characters.push(label);
+            const cover = this.characterAvatarUrl(character?.avatar);
+            if (!binding.cover && cover) binding.cover = cover;
+        }
+
+        const power = context.powerUserSettings || context.power_user || window.power_user || {};
+        const descriptions = power.persona_descriptions || {};
+        const personas = power.personas || {};
+        for (const [id, descriptor] of Object.entries(descriptions)) {
+            const name = clean(descriptor?.lorebook);
+            if (!name) continue;
+            const binding = this.bindingFor(map, name);
+            const label = clean(personas?.[id]) || clean(descriptor?.title) || clean(id.replace(/\.[^.]+$/, '')) || t('Persona');
+            if (!binding.personas.includes(label)) binding.personas.push(label);
+            const cover = this.personaAvatarUrl(id);
+            if (!binding.cover && cover) binding.cover = cover;
+        }
+
+        const chatMetadata = context.chatMetadata || context.chat_metadata || {};
+        const chatBook = clean(chatMetadata.world_info);
+        if (chatBook) {
+            const binding = this.bindingFor(map, chatBook);
+            binding.chat = true;
+        }
+
+        for (const binding of map.values()) {
+            binding.labels = [];
+            if (binding.global) binding.labels.push(t('Global'));
+            if (binding.chat) binding.labels.push(t('Chat'));
+            if (binding.characters.length) binding.labels.push(t('Character'));
+            if (binding.personas.length) binding.labels.push(t('Persona'));
+        }
+        return map;
+    }
+
+    filteredBooks() {
+        const query = normalized(this.search);
+        let books = this.books.filter(book => {
+            const binding = book.binding || this.emptyBinding();
+            if (query) {
+                const haystack = normalized([book.name, ...binding.characters, ...binding.personas, ...binding.labels].join('\n'));
+                if (!haystack.includes(query)) return false;
+            }
+            if (this.filter === 'global') return binding.global;
+            if (this.filter === 'character') return binding.characters.length > 0;
+            if (this.filter === 'persona') return binding.personas.length > 0;
+            if (this.filter === 'chat') return binding.chat;
+            if (this.filter === 'unbound') return !binding.global && !binding.chat && !binding.characters.length && !binding.personas.length;
+            return true;
+        });
+        const collator = new Intl.Collator(undefined, { sensitivity: 'base', numeric: true });
+        books.sort((a, b) => this.sort === 'za' ? collator.compare(b.name, a.name) : collator.compare(a.name, b.name));
+        return books;
+    }
+
+    cardMarkup(book) {
+        const binding = book.binding || this.emptyBinding();
+        const enabled = this.hooks.isBookEnabled?.(book.name) !== false;
+        const cover = clean(binding.cover);
+        const words = book.name.split(/\s+/).filter(Boolean);
+        const initials = (words.slice(0, 3).map(word => word[0]).join('') || book.name[0] || '?').toLocaleUpperCase();
+        const badges = [];
+        if (binding.global) badges.push(`<span>${esc(t('Global'))}</span>`);
+        if (binding.chat) badges.push(`<span>${esc(t('Chat'))}</span>`);
+        if (binding.characters.length) badges.push(`<span title="${esc(binding.characters.join(', '))}">${esc(t('Character'))}</span>`);
+        if (binding.personas.length) badges.push(`<span title="${esc(binding.personas.join(', '))}">${esc(t('Persona'))}</span>`);
+        if (!badges.length) badges.push(`<span class="is-muted">${esc(t('Unbound'))}</span>`);
+        return `
+            <article class="nt-lorebook-card" data-nt-lorebook-card="${esc(book.id)}">
+                <button type="button" class="nt-lorebook-card-open" data-nt-lorebook-open="${esc(book.id)}" aria-label="${esc(t('Open {name}', { name: book.name }))}">
+                    <span class="nt-lorebook-cover${cover ? ' has-image' : ''}">
+                        ${cover ? `<img src="${esc(cover)}" alt="" loading="lazy" decoding="async">` : `<span>${esc(initials)}</span>${icons.lore}`}
+                    </span>
+                    <span class="nt-lorebook-card-copy">
+                        <strong title="${esc(book.name)}">${esc(book.name)}</strong>
+                        <span class="nt-lorebook-bindings">${badges.join('')}</span>
+                    </span>
+                </button>
+                <div class="nt-lorebook-card-actions">
+                    <button type="button" class="nt-lorebook-global-button${binding.global ? ' is-active' : ''}" data-nt-lorebook-global="${esc(book.name)}" aria-pressed="${binding.global ? 'true' : 'false'}" title="${esc(binding.global ? t('Remove from active global Lorebooks') : t('Add to active global Lorebooks'))}">
+                        <i class="fa-solid fa-globe" aria-hidden="true"></i><span>${esc(t('Global'))}</span>
+                    </button>
+                    <button type="button" class="nt-lorebook-enabled-toggle${enabled ? ' is-active' : ''}" data-nt-lorebook-enabled="${esc(book.name)}" role="switch" aria-checked="${enabled ? 'true' : 'false'}" aria-label="${esc(t('Enable Lorebook everywhere: {name}', { name: book.name }))}" title="${esc(enabled ? t('Disable this Lorebook for all contexts') : t('Enable this Lorebook for all contexts'))}">
+                        <span class="nt-lorebook-enabled-state">${esc(t(enabled ? 'On' : 'Off'))}</span>
+                        <span class="nt-lorebook-enabled-track" aria-hidden="true"><span></span></span>
+                    </button>
+                </div>
+            </article>`;
+    }
+
+    renderGallery() {
+        if (!this.gallery) return;
+        const rows = this.filteredBooks();
+        const pages = Math.max(1, Math.ceil(rows.length / this.pageSize));
+        this.page = Math.max(1, Math.min(this.page, pages));
+        const start = (this.page - 1) * this.pageSize;
+        const visible = rows.slice(start, start + this.pageSize);
+        const filter = (value, label) => `<button type="button" class="nt-lorebook-filter${this.filter === value ? ' is-active' : ''}" data-nt-lorebook-filter="${value}" aria-pressed="${this.filter === value ? 'true' : 'false'}">${esc(t(label))}</button>`;
+        const resultsMarkup = visible.length
+            ? `<div class="nt-lorebook-grid">${visible.map(book => this.cardMarkup(book)).join('')}</div>`
+            : `<div class="nt-lorebook-library-empty">${icons.lore}<strong>${esc(t('No Lorebooks found'))}</strong><span>${esc(t('Try another filter or create a new Lorebook.'))}</span></div>`;
+        const footerMarkup = `
+                <span>${rows.length} ${esc(rows.length === 1 ? t('Lorebook') : t('Lorebooks'))}</span>
+                <div class="nt-lorebook-pager">
+                    <button type="button" class="nt-icon-btn" data-nt-lorebook-page="prev" ${this.page <= 1 ? 'disabled' : ''} aria-label="${esc(t('Previous page'))}">‹</button>
+                    <span><strong>${this.page}</strong> / ${pages}</span>
+                    <button type="button" class="nt-icon-btn" data-nt-lorebook-page="next" ${this.page >= pages ? 'disabled' : ''} aria-label="${esc(t('Next page'))}">›</button>
+                </div>`;
+
+        // Refresh only the result area and pagination after the initial render.
+        // Rebuilding the toolbar on every input event destroys the focused search
+        // element, making users click back into the field after each keystroke.
+        const body = this.gallery.querySelector(':scope > .nt-lorebook-library-body');
+        const footer = this.gallery.querySelector(':scope > .nt-lorebook-library-footer');
+        if (body && footer) {
+            body.innerHTML = resultsMarkup;
+            footer.innerHTML = footerMarkup;
+            const search = this.gallery.querySelector('[data-nt-lorebook-search]');
+            if (search && search !== search.ownerDocument.activeElement && search.value !== this.search) {
+                search.value = this.search;
+            }
+            for (const button of this.gallery.querySelectorAll('[data-nt-lorebook-filter]')) {
+                const active = button.dataset.ntLorebookFilter === this.filter;
+                button.classList.toggle('is-active', active);
+                button.setAttribute('aria-pressed', String(active));
+            }
+            const sort = this.gallery.querySelector('[data-nt-lorebook-sort]');
+            if (sort && sort.value !== this.sort) sort.value = this.sort;
+            return;
+        }
+
+        this.gallery.innerHTML = `
+            <header class="nt-lorebook-library-header">
+                <button type="button" class="nt-control-btn nt-lorebook-open-native" data-nt-lorebook-open-native title="${esc(t('Open Native World Info'))}" aria-label="${esc(t('Open Native World Info'))}">${icons.external}<span>${esc(t('Open Native World Info'))}</span></button>
+                <div class="nt-lorebook-library-actions">
+                    <button type="button" class="nt-control-btn is-primary" data-nt-lorebook-create>${icons.plus}<span>${esc(t('New'))}</span></button>
+                    <button type="button" class="nt-control-btn" data-nt-lorebook-import>${icons.upload}<span>${esc(t('Import'))}</span></button>
+                    <button type="button" class="nt-icon-btn" data-nt-lorebook-settings title="${esc(t('Lorebook settings'))}" aria-label="${esc(t('Lorebook settings'))}">${icons.settings}</button>
+                    <button type="button" class="nt-icon-btn" data-nt-lorebook-refresh title="${esc(t('Refresh'))}" aria-label="${esc(t('Refresh'))}">${icons.refresh}</button>
+                </div>
+            </header>
+            <div class="nt-lorebook-library-toolbar">
+                <label class="nt-lorebook-search">${icons.search}<input type="search" class="text_pole" data-nt-lorebook-search value="${esc(this.search)}" placeholder="${esc(t('Search Lorebooks…'))}"></label>
+                <div class="nt-lorebook-filters" role="group" aria-label="${esc(t('Filter Lorebooks'))}">
+                    ${filter('all', 'All')}${filter('global', 'Global')}${filter('character', 'Character')}${filter('persona', 'Persona')}${filter('chat', 'Chat')}${filter('unbound', 'Unbound')}
+                </div>
+                <select class="text_pole nt-lorebook-sort" data-nt-lorebook-sort aria-label="${esc(t('Sort Lorebooks'))}">
+                    <option value="az" ${this.sort === 'az' ? 'selected' : ''}>${esc(t('A → Z'))}</option>
+                    <option value="za" ${this.sort === 'za' ? 'selected' : ''}>${esc(t('Z → A'))}</option>
+                </select>
+            </div>
+            <div class="nt-lorebook-library-body">
+                ${resultsMarkup}
+            </div>
+            <footer class="nt-lorebook-library-footer">
+                ${footerMarkup}
+            </footer>`;
+    }
+
+    async createBook() {
+        try {
+            const [{ Popup }, worldInfoModule, utilsModule] = await Promise.all([
+                import('/scripts/popup.js'),
+                import('/scripts/world-info.js'),
+                import('/scripts/utils.js'),
+            ]);
+            const getFreeWorldName = worldInfoModule?.getFreeWorldName;
+            const createNewWorldInfo = worldInfoModule?.createNewWorldInfo;
+            const updateWorldInfoList = worldInfoModule?.updateWorldInfoList;
+            if (typeof Popup?.show?.input !== 'function' || typeof createNewWorldInfo !== 'function') {
+                this.toast?.(t('Could not create this Lorebook.'));
+                return false;
+            }
+
+            const tempName = typeof getFreeWorldName === 'function' ? getFreeWorldName() : t('New World');
+            const requestedName = clean(await Popup.show.input(
+                t('Create a new World Info'),
+                t('Enter a name for the new file:'),
+                tempName,
+            ));
+            if (!requestedName) return false;
+
+            const created = await createNewWorldInfo(requestedName, { interactive: true });
+            if (!created) return false;
+            if (typeof updateWorldInfoList === 'function') await updateWorldInfoList();
+
+            const names = Array.isArray(worldInfoModule?.world_names) ? worldInfoModule.world_names : [];
+            let actualName = names.includes(requestedName) ? requestedName : '';
+            if (!actualName && typeof utilsModule?.getSanitizedFilename === 'function') {
+                const sanitized = clean(await utilsModule.getSanitizedFilename(requestedName));
+                if (sanitized && names.includes(sanitized)) actualName = sanitized;
+            }
+
+            // While the gallery is active, NastyTavern keeps the native World Info
+            // editor detached from document. SillyTavern's updateWorldInfoList()
+            // refreshes its module state but its global jQuery selectors cannot
+            // repopulate detached selects. Mirror the freshly loaded native state
+            // into those same selects before rebuilding the gallery.
+            this.syncNativeWorldSelectors(worldInfoModule, actualName);
+            await this.refresh();
+            if (actualName) {
+                await this.openBook(actualName);
+                return true;
+            }
+
+            // The file was saved but SillyTavern did not expose a resolvable
+            // selector name. Keep the gallery current rather than pretending
+            // creation failed or relying on a fixed post-popup timeout.
+            this.showGallery();
+            return true;
+        } catch (error) {
+            this.toast?.(t('Could not create this Lorebook.'));
+            return false;
+        }
+    }
+
+    async importBook() {
+        let picker = null;
+        try {
+            const worldInfoModule = await import('/scripts/world-info.js');
+            const importWorldInfo = worldInfoModule?.importWorldInfo;
+            const nativeInput = this.panel?.querySelector('#world_import_file');
+            if (typeof importWorldInfo !== 'function') {
+                // Compatibility fallback for older SillyTavern builds: target the
+                // native file input directly. The native import button itself is
+                // not reliable here because its handler uses a document-global
+                // selector while the World Info panel is detached in gallery view.
+                nativeInput?.click();
+                return Boolean(nativeInput);
+            }
+
+            picker = document.createElement('input');
+            picker.type = 'file';
+            picker.hidden = true;
+            if (nativeInput?.accept) picker.accept = nativeInput.accept;
+            if (nativeInput?.capture) picker.capture = nativeInput.capture;
+            document.body.append(picker);
+
+            const file = await new Promise(resolve => {
+                let settled = false;
+                const finish = value => {
+                    if (settled) return;
+                    settled = true;
+                    resolve(value);
+                };
+                picker.addEventListener('change', () => finish(picker.files?.[0] || null), { once: true });
+                // Browsers do not emit change when the picker is cancelled. Once
+                // focus returns to the page, defer one task so a selected file's
+                // change event gets the first chance to settle the promise.
+                window.addEventListener('focus', () => setTimeout(() => finish(picker.files?.[0] || null), 0), { once: true });
+                picker.click();
+            });
+            if (!file) return false;
+
+            const previousNames = new Set(Array.isArray(worldInfoModule?.world_names) ? worldInfoModule.world_names : []);
+            const imported = await importWorldInfo(file);
+            if (imported === false) return false;
+
+            const names = Array.isArray(worldInfoModule?.world_names) ? worldInfoModule.world_names : [];
+            let actualName = '';
+            const dot = file.name.lastIndexOf('.');
+            const requestedName = clean(dot > 0 ? file.name.slice(0, dot) : file.name);
+            try {
+                const utilsModule = await import('/scripts/utils.js');
+                const sanitized = typeof utilsModule?.getSanitizedFilename === 'function'
+                    ? clean(await utilsModule.getSanitizedFilename(requestedName))
+                    : '';
+                if (sanitized && names.includes(sanitized)) actualName = sanitized;
+            } catch (_) {}
+            if (!actualName && requestedName && names.includes(requestedName)) actualName = requestedName;
+            if (!actualName) actualName = names.find(name => !previousNames.has(name)) || '';
+
+            // importWorldInfo() refreshes world_names, but its own global jQuery
+            // selector cannot repopulate the detached native selects. Mirror the
+            // refreshed native state before rebuilding NastyTavern's gallery.
+            this.syncNativeWorldSelectors(worldInfoModule, actualName);
+            await this.refresh();
+            if (actualName) await this.openBook(actualName);
+            else this.showGallery();
+            return true;
+        } catch (_) {
+            this.toast?.(t('Could not import this Lorebook.'));
+            return false;
+        } finally {
+            picker?.remove();
+        }
+    }
+
+    async openBook(name) {
+        const requested = clean(name);
+        if (!requested) return;
+        const book = this.books.find(item => item.id === requested || item.name === requested || item.nativeValue === requested);
+        const bookName = clean(book?.name) || requested;
+        const nativeValue = clean(book?.nativeValue) || requested;
+
+        this.currentBook = bookName;
+        this.currentEntryUid = '';
+        this.currentBookData = null;
+
+        // Show the editor without disconnecting either view. The gallery is
+        // hidden while SillyTavern loads the native World Info editor.
+        this.showEditor(bookName, { loading: true });
+
+        let ok = false;
+        try {
+            ok = await this.hooks.openBook?.(nativeValue);
+        } catch (error) {
+            ok = false;
+        }
+        if (ok === false) {
+            this.showGallery();
+            return;
+        }
+
+        // Native World Info has finished selecting/rendering this book inside the
+        // already-active detail body; finish the header synchronization.
+        this.showEditor(bookName, { loading: false });
+        await this.loadCurrentBookData();
+        this.syncEditorHeader();
+        this.hooks.syncEntryFolders?.();
+    }
+
+    async showNativeWorldInfo() {
+        if (!this.panel?.isConnected) {
+            this.toast?.(t('Could not open Native World Info.'));
+            return false;
+        }
+        // Restore the actual SillyTavern controls rather than cloning them or
+        // opening a second World Info drawer. This preserves native handlers,
+        // selected global worlds, entry states and pending saves.
+        const opened = await this.hooks.openNativeWorldInfo?.();
+        if (opened === false) {
+            this.toast?.(t('Could not open Native World Info.'));
+            return false;
+        }
+        this.restoreNameInputToHeader();
+        this.view = 'native';
+        this.root?.classList.remove('is-gallery-view', 'is-editor-view', 'is-sidebar-hidden');
+        this.root?.classList.add('is-native-view');
+        if (this.gallery) this.gallery.hidden = true;
+        if (this.editorView) {
+            this.editorView.hidden = false;
+            this.editorView.classList.remove('is-loading');
+            this.editorView.setAttribute('aria-busy', 'false');
+        }
+        this.replaceSurfaceWith(this.editorView);
+        return true;
+    }
+
+    showGallery() {
+        // Restore the editor layout and hide it; keep its native selectors
+        // connected so SillyTavern can continue using them from any screen.
+        this.hooks.onShowGallery?.();
+        this.view = 'gallery';
+        this.root?.classList.add('is-gallery-view');
+        this.root?.classList.remove('is-editor-view', 'is-native-view', 'is-sidebar-hidden');
+        if (this.editorView) {
+            this.editorView.hidden = true;
+            this.editorView.classList.remove('is-loading');
+            this.editorView.setAttribute('aria-busy', 'false');
+        }
+        if (this.gallery) this.gallery.hidden = false;
+        this.replaceSurfaceWith(this.gallery);
+        this.currentEntryUid = '';
+        this.scheduleRefresh();
+    }
+
+    showEditor(name, { loading = false } = {}) {
+        this.currentBook = clean(name) || this.currentBook;
+        this.view = 'editor';
+        this.root?.classList.remove('is-gallery-view', 'is-native-view');
+        this.root?.classList.add('is-editor-view');
+        if (this.gallery) this.gallery.hidden = true;
+        if (this.editorView) {
+            this.editorView.hidden = false;
+            this.editorView.classList.toggle('is-loading', Boolean(loading));
+            this.editorView.setAttribute('aria-busy', loading ? 'true' : 'false');
+        }
+        this.replaceSurfaceWith(this.editorView);
+        this.syncEditorHeader();
+    }
+
+    moveNameInputToFileRow() {
+        const nameInput = this.editorView?.querySelector?.('[data-nt-lorebook-name]') || null;
+        const select = this.panel?.querySelector?.('#world_editor_select') || null;
+        const row = select?.closest?.('.flex-container.alignitemscenter') || null;
+        if (!nameInput || !row) return nameInput;
+
+        row.classList.add('nt-lorebook-file-actions-row');
+        if (nameInput.parentElement !== row) {
+            const anchor = row.querySelector('#world_popup_export, #world_duplicate, #world_popup_delete, .nt-native-community-share-lorebook');
+            row.insertBefore(nameInput, anchor || row.firstChild);
+        }
+        return nameInput;
+    }
+
+    restoreNameInputToHeader() {
+        const nameInput = this.panel?.querySelector?.('[data-nt-lorebook-name]')
+            || this.editorView?.querySelector?.('[data-nt-lorebook-name]')
+            || null;
+        const heading = this.editorHeader?.querySelector?.('.nt-lorebook-editor-heading') || null;
+        if (nameInput && heading && nameInput.parentElement !== heading) heading.prepend(nameInput);
+        this.panel?.querySelector?.('.nt-lorebook-file-actions-row')?.classList.remove('nt-lorebook-file-actions-row');
+    }
+
+    syncEditorHeader() {
+        if (!this.editorHeader) return;
+        const nameInput = this.moveNameInputToFileRow();
+        if (nameInput && document.activeElement !== nameInput && !this.renamePending) nameInput.value = this.currentBook || '';
+    }
+
+    async renameCurrentBook(nextName, input = null) {
+        const previousName = clean(this.currentBook);
+        const requestedName = clean(nextName);
+        const field = input || this.editorView?.querySelector?.('[data-nt-lorebook-name]') || null;
+
+        if (!previousName || this.renamePending) return false;
+        if (!requestedName) {
+            if (field) field.value = previousName;
+            this.toast?.(t('Lorebook name cannot be empty.'));
+            return false;
+        }
+        if (requestedName === previousName) {
+            if (field) field.value = previousName;
+            return true;
+        }
+
+        this.renamePending = true;
+        if (field) {
+            field.disabled = true;
+            field.setAttribute('aria-busy', 'true');
+        }
+
+        try {
+            const renamed = await this.hooks.renameBook?.(previousName, requestedName);
+            if (!renamed) {
+                if (field) field.value = previousName;
+                this.toast?.(t('Could not rename this Lorebook.'));
+                return false;
+            }
+
+            this.currentBook = clean(renamed) || requestedName;
+            this.currentBookData = null;
+            await this.loadCurrentBookData();
+            this.bindings = await this.buildBindingIndex();
+            this.syncEditorHeader();
+            this.scheduleRefresh();
+            return true;
+        } catch (error) {
+            if (field) field.value = previousName;
+            this.toast?.(t('Could not rename this Lorebook.'));
+            return false;
+        } finally {
+            this.renamePending = false;
+            if (field) {
+                field.disabled = false;
+                field.removeAttribute('aria-busy');
+                if (document.activeElement !== field) field.value = this.currentBook || previousName;
+            }
+        }
+    }
+
+    async loadCurrentBookData() {
+        if (!this.currentBook) {
+            this.currentBookData = null;
+            return null;
+        }
+        try {
+            const module = await import('/scripts/world-info.js');
+            this.currentBookData = await module.loadWorldInfo?.(this.currentBook) || null;
+        } catch (error) {
+            this.currentBookData = null;
+        }
+        return this.currentBookData;
+    }
+
+    getEntryData(uid) {
+        const entries = this.currentBookData?.entries || {};
+        return entries?.[uid] || entries?.[Number(uid)] || Object.values(entries).find(entry => clean(entry?.uid) === clean(uid)) || null;
+    }
+
+    entryFolder(entry) {
+        return clean(
+            entry?.extensions?.nastyTavern?.folder
+            || entry?.extensions?.worldInfoGallery?.folder
+            || entry?.extensions?.world_info_gallery?.folder
+            || entry?.extensions?.folder
+            || ''
+        );
+    }
+
+    folderForUid(uid) {
+        return this.entryFolder(this.getEntryData(uid));
+    }
+
+    syncSelectedEntry(uid) {
+        this.currentEntryUid = clean(uid);
+        this.syncEditorHeader();
+    }
+
+    decorateEntrySidebar(sidebar) {
+        if (!sidebar || !this.currentBookData) return;
+        const rows = Array.from(sidebar.querySelectorAll(':scope > .nt-lorebook-entry-row'));
+        if (!rows.length) return;
+        const groups = new Map();
+        for (const row of rows) {
+            const folder = this.folderForUid(row.dataset.ntLorebookEntryUid) || '';
+            if (!groups.has(folder)) groups.set(folder, []);
+            groups.get(folder).push(row);
+        }
+        if (groups.size === 1 && groups.has('')) return;
+        sidebar.replaceChildren();
+        const ordered = [...groups.entries()].sort(([a], [b]) => {
+            if (!a) return 1;
+            if (!b) return -1;
+            return a.localeCompare(b, undefined, { sensitivity: 'base', numeric: true });
+        });
+        for (const [folder, folderRows] of ordered) {
+            const heading = document.createElement('div');
+            heading.className = 'nt-lorebook-folder-heading';
+            heading.innerHTML = `${icons.folder}<span>${esc(folder || t('Unfiled'))}</span><small>${folderRows.length}</small>`;
+            sidebar.append(heading, ...folderRows);
+        }
+    }
+
+    async toggleEnabled(name) {
+        const key = clean(name);
+        if (!key || !this.books.some(book => book.name === key) || typeof this.hooks.setBookEnabled !== 'function') {
+            this.toast?.(t('Could not change Lorebook activation.'));
+            return false;
+        }
+        const focused = Array.from(this.gallery?.querySelectorAll('[data-nt-lorebook-enabled]') || [])
+            .some(button => button.dataset.ntLorebookEnabled === key && button === document.activeElement);
+        const enabled = this.hooks.isBookEnabled?.(key) !== false;
+        try {
+            const saved = await this.hooks.setBookEnabled(key, !enabled);
+            if (saved === false) throw new Error('Lorebook activation not saved');
+            await this.refresh();
+            if (focused) {
+                const replacement = Array.from(this.gallery?.querySelectorAll('[data-nt-lorebook-enabled]') || [])
+                    .find(button => button.dataset.ntLorebookEnabled === key);
+                replacement?.focus?.({ preventScroll: true });
+            }
+            return true;
+        } catch (_) {
+            this.toast?.(t('Could not change Lorebook activation.'));
+            await this.refresh();
+            return false;
+        }
+    }
+
+    async toggleGlobal(name) {
+        if (this.globalTogglePending) return false;
+        const key = clean(name);
+        const select = this.panel?.querySelector('#world_info');
+        if (!key || !this.books.some(book => book.name === key) ||
+            !select?.isConnected || document.querySelector('#world_info') !== select) {
+            this.toast?.(t('Could not change active Lorebooks.'));
+            return false;
+        }
+
+        this.globalTogglePending = true;
+        let module;
+        let previousNames;
+        let changed = false;
+        const activeButton = this.gallery && Array.from(this.gallery.querySelectorAll('[data-nt-lorebook-global]'))
+            .find(button => button.dataset.ntLorebookGlobal === key && button === document.activeElement);
+        try {
+            module = await (this.hooks.loadNativeWorldInfo?.() || import('/scripts/world-info.js'));
+            const names = Array.isArray(module?.world_names) ? module.world_names : [];
+            if (!Array.isArray(module?.selected_world_info) || !names.includes(key)) {
+                throw new Error('Native World Info selection is unavailable');
+            }
+
+            // Keep the option values aligned with SillyTavern's world_names:
+            // the native handler maps selected *numeric indices*, not labels.
+            let option = Array.from(select.options || []).find(item => clean(item.textContent) === key);
+            if (!option || option.value !== String(names.indexOf(key))) {
+                this.syncNativeWorldSelectors(module, this.currentBook);
+                option = Array.from(select.options || []).find(item => clean(item.textContent) === key);
+            }
+            if (!option || option.value !== String(names.indexOf(key))) {
+                throw new Error('Native World Info selector is out of sync');
+            }
+
+            previousNames = [...module.selected_world_info];
+            const previous = new Set(previousNames);
+            const expected = new Set(previous);
+            if (expected.has(key)) expected.delete(key);
+            else expected.add(key);
+
+            // Restore every native option to the actual runtime selection first.
+            // A stale select must never remove unrelated global books.
+            for (const item of select.options) item.selected = previous.has(clean(item.textContent));
+            option.selected = expected.has(key);
+
+            // SillyTavern's native handler updates selected_world_info and emits
+            // WORLDINFO_SETTINGS_UPDATED. It requires a connected #world_info.
+            const jq = window.jQuery || window.$;
+            if (typeof jq === 'function') jq(select).trigger('change');
+            else select.dispatchEvent(new Event('change', { bubbles: true }));
+            if (typeof module.onWorldInfoChange === 'function' &&
+                new Set(module.selected_world_info).has(key) !== expected.has(key)) {
+                module.onWorldInfoChange('__notSlashCommand__');
+            }
+
+            const actual = new Set(module.selected_world_info);
+            if (actual.size !== expected.size || [...expected].some(value => !actual.has(value))) {
+                throw new Error('Native World Info did not accept the complete global selection');
+            }
+            changed = true;
+
+            // SillyTavern normally debounces copying selected_world_info into
+            // world_info.globalSelect, then debounces persistence. Copy it now
+            // and request a real save so a quick page reload cannot lose it.
+            if (!module.world_info || typeof module.world_info !== 'object') {
+                throw new Error('Native World Info settings are unavailable');
+            }
+            module.world_info.globalSelect = [...module.selected_world_info];
+            if (this.hooks.saveNativeWorldInfo) {
+                await this.hooks.saveNativeWorldInfo(module);
+            } else {
+                const { saveSettings } = await import('/script.js');
+                await saveSettings();
+            }
+
+            await this.refresh();
+            if (activeButton) {
+                const replacement = Array.from(this.gallery?.querySelectorAll('[data-nt-lorebook-global]') || [])
+                    .find(button => button.dataset.ntLorebookGlobal === key);
+                replacement?.focus?.({ preventScroll: true });
+            }
+            return true;
+        } catch (error) {
+            console.error('[NastyTavern] Could not persist Global Lorebook selection', error);
+            // If the native handler partially changed the selection, restore
+            // exactly what the user had before. Do not silently drop other books.
+            if (changed === false && module && Array.isArray(previousNames) &&
+                typeof module.onWorldInfoChange === 'function') {
+                try {
+                    const original = new Set(previousNames);
+                    for (const item of select.options) item.selected = original.has(clean(item.textContent));
+                    module.onWorldInfoChange('__notSlashCommand__');
+                } catch (_) { /* Original state remains the source of truth */ }
+            }
+            this.toast?.(t('Could not change active Lorebooks.'));
+            await this.refresh();
+            return false;
+        } finally {
+            this.globalTogglePending = false;
+        }
+    }
+
+    async watchCurrentBookDeletion(bookName) {
+        const target = clean(bookName);
+        if (!target) return;
+
+        let worldInfoModule;
+        try {
+            worldInfoModule = await import('/scripts/world-info.js');
+        } catch (_) {
+            return;
+        }
+
+        // While NastyTavern owns the Lorebook workspace, the native World Info
+        // panel is detached from document. SillyTavern still updates the exported
+        // `world_names` list after a successful deletion, but its global jQuery
+        // `#world_editor_select` change event has no connected target to fire on.
+        // Watch that native source of truth only for the lifetime of this delete
+        // interaction instead of keeping a permanent observer or fixed delay.
+        const deadline = Date.now() + 60000;
+        while (Date.now() < deadline) {
+            if (this.view !== 'editor' || clean(this.currentBook) !== target) return;
+            const names = Array.isArray(worldInfoModule?.world_names) ? worldInfoModule.world_names : [];
+            if (!names.includes(target)) {
+                this.syncNativeWorldSelectors(worldInfoModule, '');
+                this.hooks.forgetBook?.(target);
+                this.currentBook = '';
+                this.currentEntryUid = '';
+                this.currentBookData = null;
+                this.showGallery();
+                return;
+            }
+            await new Promise(resolve => setTimeout(resolve, 100));
+        }
+    }
+
+    onClick(event) {
+        const nativeDelete = event.target.closest?.('#world_popup_delete');
+        if (nativeDelete && this.view === 'editor' && this.currentBook) {
+            // Do not prevent or stop this event: SillyTavern owns the confirmation
+            // and deletion. We only follow the exported native state until the
+            // confirmed deletion has actually completed.
+            void this.watchCurrentBookDeletion(this.currentBook);
+            return;
+        }
+
+        if (event.target.closest('[data-nt-lorebook-open-native]')) {
+            event.preventDefault();
+            void this.showNativeWorldInfo();
+            return;
+        }
+        const open = event.target.closest('[data-nt-lorebook-open]');
+        if (open) {
+            event.preventDefault();
+            void this.openBook(open.dataset.ntLorebookOpen);
+            return;
+        }
+        const filter = event.target.closest('[data-nt-lorebook-filter]');
+        if (filter) {
+            event.preventDefault();
+            this.filter = filter.dataset.ntLorebookFilter || 'all';
+            this.page = 1;
+            this.renderGallery();
+            return;
+        }
+        const page = event.target.closest('[data-nt-lorebook-page]');
+        if (page) {
+            event.preventDefault();
+            const pages = Math.max(1, Math.ceil(this.filteredBooks().length / this.pageSize));
+            this.page = page.dataset.ntLorebookPage === 'prev' ? Math.max(1, this.page - 1) : Math.min(pages, this.page + 1);
+            this.renderGallery();
+            return;
+        }
+        const enabledToggle = event.target.closest('[data-nt-lorebook-enabled]');
+        if (enabledToggle) {
+            event.preventDefault();
+            event.stopPropagation();
+            void this.toggleEnabled(enabledToggle.dataset.ntLorebookEnabled);
+            return;
+        }
+        const globalToggle = event.target.closest('[data-nt-lorebook-global]');
+        if (globalToggle) {
+            event.preventDefault();
+            event.stopPropagation();
+            void this.toggleGlobal(globalToggle.dataset.ntLorebookGlobal);
+            return;
+        }
+        if (event.target.closest('[data-nt-lorebook-back]')) {
+            event.preventDefault();
+            this.showGallery();
+            return;
+        }
+        if (event.target.closest('[data-nt-lorebook-create]')) {
+            event.preventDefault();
+            void this.createBook();
+            return;
+        }
+        if (event.target.closest('[data-nt-lorebook-import]')) {
+            event.preventDefault();
+            void this.importBook();
+            return;
+        }
+        if (event.target.closest('[data-nt-lorebook-settings]')) {
+            event.preventDefault();
+            void this.hooks.openSettings?.();
+            return;
+        }
+        if (event.target.closest('[data-nt-lorebook-refresh]')) {
+            event.preventDefault();
+            void this.refresh();
+        }
+    }
+
+    onInput(event) {
+        const search = event.target.closest('[data-nt-lorebook-search]');
+        if (search) {
+            this.search = search.value;
+            this.page = 1;
+            this.renderGallery();
+        }
+    }
+
+    onChange(event) {
+        const sort = event.target.closest('[data-nt-lorebook-sort]');
+        if (sort) {
+            this.sort = sort.value === 'za' ? 'za' : 'az';
+            this.settings.lorebookStudio ||= {};
+            this.settings.lorebookStudio.sort = this.sort;
+            saveSettings();
+            this.page = 1;
+            this.renderGallery();
+            return;
+        }
+        const nameInput = event.target.closest('[data-nt-lorebook-name]');
+        if (nameInput) {
+            void this.renameCurrentBook(nameInput.value, nameInput);
+            return;
+        }
+    }
+
+    onKeydown(event) {
+        const nameInput = event.target.closest?.('[data-nt-lorebook-name]');
+        if (!nameInput) return;
+        if (event.key === 'Enter' && !event.isComposing) {
+            event.preventDefault();
+            nameInput.blur();
+            return;
+        }
+        if (event.key === 'Escape') {
+            event.preventDefault();
+            nameInput.value = this.currentBook || '';
+            nameInput.blur();
+        }
+    }
+}

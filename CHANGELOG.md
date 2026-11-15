@@ -1,0 +1,438 @@
+# NastyTavern UI — Changelog
+
+All notable changes to NastyTavern UI are documented here.
+
+---
+
+## v0.1.14
+
+### One-click updates (revision 115)
+
+- Home **Update now** uses SillyTavern's own Git update API to install the new commit directly, followed by an automatic page reload only when an update was actually pulled.
+- Fixed Git installation detection for local/global extension scopes and ZIP folders. A 200 response from the native version endpoint without Git metadata is no longer treated as an updatable repository.
+- Native Git status is revalidated before a pull; a stale GitHub manifest or an already-current commit can no longer trigger a false installation success. Admin-only global installs and update errors have clearer messages.
+- Manually copied ZIP installations continue to show a download link because SillyTavern cannot Git-pull a folder without Git metadata.
+
+
+### Backward compatibility (revision 114)
+
+- Kept a single `## v0.1.14` release heading so NastyTavern 0.1.13 and earlier update checkers can read all 0.1.14 notes, including later maintenance revisions.
+- Verified the published manifest's semantic version is newer than 0.1.13 and documented the update steps for older installed clients and Git-managed installs.
+
+### Changelog reliability (revision 113)
+
+- Fixed the Home changelog parser so headings including a revision suffix are understood; the published changelog also uses canonical version headings for older installations.
+- When a GitHub raw-content response is older than the installed build, the update card now displays the installed version's notes and an accurate warning instead of incorrectly reporting the old release as up to date.
+
+### Native World Info icons (revision 112)
+
+- Fixed native World Info icons disappearing: shared Lorebook button styling no longer overrides Font Awesome's icon font family and weight.
+- Restored a flexible native file-action toolbar with properly sized icon buttons while leaving the Lorebook gallery and its save behavior unchanged.
+
+### Native World Info navigation (revision 111)
+
+- Added a left-aligned **Open Native World Info** action to the Lorebooks toolbar; New, Import, Settings and Refresh remain right-aligned.
+- Native World Info is displayed with SillyTavern’s original selectors, global bindings, and entry controls, and offers a back button to the Lorebooks gallery.
+- Preserved global lorebook persistence and existing search, Global and universal ON/OFF behavior.
+
+### Global Lorebook save reliability (revision 110)
+
+- Keep SillyTavern's native World Info selector connected to the document when the NastyTavern gallery is visible (the native editor remains hidden, not detached). This prevents global book selections from being read as empty and accidentally discarded.
+- Global membership changes now validate the full native selection, preserve other selected books, and explicitly persist the updated selection through SillyTavern's settings save rather than relying only on a delayed save.
+- Added regression tests for Global ON/OFF across gallery/editor navigation, existing selected books, and reload-safe persistence.
+
+### Lorebooks
+
+- Added a **master ON/OFF switch for every Lorebook**, regardless of whether it is global, character-bound, persona-bound, chat-bound or currently unbound. OFF excludes that book from the World Info entries loaded for generation, across all four native sources. The original entry states, global selection and context bindings are never modified; ON restores normal behavior.
+- Master ON/OFF state is saved with NastyTavern settings and applied even when the Lorebook gallery is closed; the generation listener is released if the extension is disabled.
+- Kept the separate **Global** globe control on every card for adding/removing a book from SillyTavern's native global selection. It stays synchronized with changes from SillyTavern, including slash commands.
+- Accessible switch and Global control preserve keyboard focus after refresh. Renaming or deleting a book in the integrated editor carries over or cleans up its disabled state.
+
+### Fixed
+
+- Lorebook gallery search now keeps its original input element mounted while filtering results. Typing no longer loses focus or resets the caret after every character.
+- Search results and pagination update independently of the toolbar; filter and sort button state remain synchronized during refreshes.
+- Added a browser regression test covering continuous typing, empty search results, clearing a query, filter/sort changes, and result refreshes.
+
+---
+
+## v0.1.13
+
+### Update reliability (revision 106)
+
+- Bypass intermediary caches when checking the published GitHub manifest and changelog, so new releases do not get hidden behind stale responses.
+- Add a **Check again** action on Home to bypass the 15-minute session cache, including while diagnosing failed checks.
+- Provide a manual download link instead of a failing Git update action when the extension was installed without Git metadata.
+
+### Fixed
+
+- Removed the redundant version label from the left sidebar brand, retaining its logo and title. The version remains available on Home, About and Health.
+
+- Corrected NastyTavern version labels on Home, About, and Health diagnostics to match the installed v0.1.13 release; centralized the displayed version across panels.
+
+### Compatibility
+
+- Added a generic Third-Party Top Bar Bridge. Native extension buttons added to SillyTavern's top bar (including ST-StatTab's `#stat_tab_topbar`) are mirrored into the NastyTavern header without replacing or moving their original click handlers.
+- Added an opt-in DOM marker (`data-nt-topbar-action`) and `window.NastyTavernTopbar.register(...)` JavaScript API for third-party extension authors.
+- Mirrored buttons update when their source is added, hidden, or removed, and an overflow menu keeps multiple extensions accessible on narrow screens.
+- Preserved DataCat's existing Character Libraries navigation integration.
+
+---
+
+## v0.1.12
+
+Official release introducing conditional Lorebook activation based on SillyTavern variables, with safer editing and integration into native World Info processing.
+
+### Added
+
+- Added a NastyTavern **Variables** activation mode for Lorebook entries. Conditions such as `.affection >= 50`, scoped references (`.local.name` / `.global.name`), boolean logic (`&&`, `||`, `!`) and parentheses are evaluated against SillyTavern local/global variables without `eval()`.
+- Variable-driven entries use SillyTavern's native `WORLDINFO_FORCE_ACTIVATE` pipeline, so normal World Info budget, timing, character filters and prompt insertion remain host-owned.
+- The Lorebook editor validates only the condition syntax; variable values are intentionally resolved only during a real World Info generation scan. The World Info Inspector continues to report runtime activation results from the active chat context.
+
+### Fixed
+
+- Fixed the Lorebook **Variables** condition field losing or clearing its text when focus left the input. NastyTavern-owned activation controls are no longer processed by the native-entry sync listener, condition drafts are preserved across editor refreshes, and the metadata preservation registry is updated before SillyTavern save events can fire.
+- Lorebook entry activation is now explicit in the selected-entry pane: a visible **Activation** selector exposes Constant, Normal, Vectorized, and Variables instead of requiring users to discover the compact strategy icon in the entry list. Selecting **Variables** immediately reveals the condition editor with syntax validation only.
+- Missing variables at generation time are treated as a normal `false` result for the whole condition. They never throw, warn, block generation, or accidentally satisfy negated / `!=` expressions.
+
+### Compatibility
+
+- Variable entries store their NastyTavern metadata under `extensions.nastyTavern.activation`. Their native keyword/constant/vector state is backed up while Variable mode is active and restored when switching back, leaving the entry safely inactive when NastyTavern is unavailable.
+
+---
+
+## v0.1.11
+
+Update focused on completing the Community self-host migration and restoring previews for legacy shared Character Cards without undoing the v0.1.10 egress reductions.
+
+### Fixed
+
+- Restored Character Card previews on **Home → Shared Cards** and inside **Community → Character Cards** for legacy shares owned by the signed-in user. Older shares without `preview_path` now self-repair once in the background: NastyTavern downloads the original PNG a single time, generates the same compact preview used by new shares, uploads it beside the resource, and persists the preview path in the message metadata. Subsequent Home/Community renders use only the compact preview.
+- Kept the lightweight fallback for legacy shares owned by other users, avoiding a return to repeated multi-megabyte thumbnail downloads when the current user cannot persist a repaired preview.
+
+### Infrastructure
+
+- Migrated the Community backend from the previous hosted Supabase project to the new self-hosted Supabase deployment while preserving Auth, Data API, Realtime, Storage, Edge Functions, Community data, ratings, messages, memberships, and Catalogue integration.
+- Switched the extension Community client to the new public HTTPS backend and its publishable client key; privileged service-role credentials remain server-side only.
+- Reconfigured Google OAuth for the self-hosted Auth callback and validated the complete browser sign-in flow back into SillyTavern.
+- Migrated Community Storage objects and corrected stored avatar URLs so public profile images resolve through the new backend instead of localhost.
+- Kept the hourly Community Storage cleanup on the internal Docker API gateway route so maintenance does not depend on the public Internet path.
+- Public Auth and Realtime were validated through the HTTPS gateway while direct API gateway and Postgres/Supavisor host ports remain bound to localhost.
+
+### Security
+
+- Rotated the self-hosted backend authentication, database, dashboard, Storage/S3, internal service, and maintenance credentials during the migration; the browser extension continues to contain only the intended Supabase publishable key.
+- Preserved the existing Community privacy boundary: no Community/Supabase connection before explicit network consent, with Presence/typing remaining a separate opt-in.
+
+---
+
+## v0.1.10
+
+Update focused on reducing Supabase egress and tightening Community network behavior without changing the Community feature set.
+
+### Performance
+
+- Reduced Supabase egress for shared Character Cards by generating compact local previews for new Community shares instead of loading the original multi-megabyte PNG as a thumbnail. Legacy shares without a preview keep a lightweight fallback until the user explicitly opens, imports, or downloads the resource.
+- Community Home requests are now coalesced and cached for 60 seconds instead of being repeatedly refreshed by broad background activity.
+- Community Realtime now follows the active UI lifecycle: channel subscriptions close with the Community panel, new messages and reactions update the active view incrementally, and typing broadcasts are sent only when typing state changes.
+- Nasty Catalogue now authorizes access through Supabase but fetches large binary files directly from Cloudflare R2 through short-lived signed URLs; Character Card tracking metadata is reconstructed locally in the browser. The older Supabase binary proxy remains only as a compatibility fallback.
+- Profile avatars are resized and compressed to WebP when supported before upload, reducing repeated Storage transfer while preserving animated GIFs.
+- Community Storage cleanup is queue-driven and scheduled hourly, avoiding unnecessary object scans when there is nothing to remove.
+
+---
+
+## v0.1.9
+
+Update focused on global and per-character Chat Appearance, plus mobile Lorebook compatibility improvements.
+
+### Added
+
+- Added **Global Chat Appearance** in NastyTavern Settings, with complete User and Character customization for Avatar, Name, Message, and Rich Content, including presets, categorized editing, RGBA colors, reset/copy tools, full-screen editing, and responsive controls.
+- Added **Individual Chat Appearance** for Character Cards, inheriting the global appearance by default while allowing per-character overrides with **Inherit** and **Same as User** behavior.
+- Added a shared **modal opacity** control to NastyTavern modal headers.
+
+### Changed
+
+- Unified all visible scrollbars under one NastyTavern primitive: consistent geometry, surface track, and dynamic accent-tinted thumb/hover states across native SillyTavern and NastyTavern workspaces, while preserving intentionally hidden compact tab-strip scrollbars.
+- Unified shared UI primitives across NastyTavern: equivalent checkboxes, radios, sliders, fields, selects, color/file inputs, focus/disabled states, Select2 controls, and other micro-controls now use one canonical design instead of feature-specific variants (including Calendar and Settings), while preserving SillyTavern behavior.
+- Message edit **Confirm** and **Delete** actions now use semantic success (green) and danger (red) colors consistently across desktop, tablet, and mobile layouts.
+- Restyled the entire chat input composer with a cooler NastyTavern surface, frameless action buttons, and consistent dynamic accent coloring across native and extension controls.
+- Chat Appearance now follows native SillyTavern styling whenever no explicit NastyTavern override is set.
+- Improved Chat Appearance responsiveness, control performance, and scroll preservation across desktop, tablet, split-screen, and mobile layouts.
+
+### Fixed
+- Fixed shared checkbox and radio indicators so their checked marks are geometrically centered across all NastyTavern surfaces.
+- Fixed duplicate modal opacity controls appearing inside each embedded Chat Tools view; opacity now belongs only to the Chat Tools header.
+
+- Fixed mobile **Delete messages** mode so SillyTavern's native Delete/Cancel controls stay visible and selection checkboxes no longer disrupt the phone message layout.
+- Fixed the mobile chat composer so multiline input dynamically reserves its actual height in the chat scroll area, keeping the latest message lines visible as the composer expands.
+- Fixed mobile message editing so SillyTavern's native confirm, cancel, copy, delete, and move controls stay visible and functional in a compact in-flow toolbar that no longer overlaps the avatar.
+- Fixed the NastyTavern **Settings → Prompt** workspace so SillyTavern drawer width rules can no longer collapse its content into a narrow column.
+- Fixed side-avatar and long-message layout issues that could cause text overlap with Nasty Veil, Nasty Edge, or Nasty Banner presentation modes.
+- Fixed **World Info Gallery / Lorebooks** on mobile so the workspace keeps the NastyTavern navigation visible, initializes correctly in portrait, and supports vertical touch scrolling without requiring an orientation change.
+
+---
+
+## v0.1.8
+
+Update focused on integrated library workspaces, Persona Studio, Lorebook management, mobile chat/model workflows, extension diagnostics, updater reliability, and compatibility fixes.
+
+### Added
+
+- Added **Lorebook Library**, an integrated World Info workspace with gallery browsing, search, filters, sorting, pagination, bindings, global activation controls, native entry editing, and optional folders while keeping SillyTavern as the source of truth.
+- Added **Persona Studio**, a responsive persona workspace with library browsing, search, filters, sorting, pagination, detail/edit workflows, persona selection, locks/connections, image actions, and backup/restore access.
+- Added structured persona sections and contextual **Variants**, including drag-to-reorder prompt order, character/chat/text/RegExp activation, and a preview of the resolved persona content.
+- Added a compact **Copy report** action in Extensions that copies installed third-party extension name, version, enabled state, and repository URL for diagnostics or support.
+- Added opt-in mobile model metadata in NastyTavern Settings: OpenRouter context (`ctx`), token value (`t/$`) and estimated max prompt cost (`$`), plus NanoGPT context, input/output pricing and subscription status (`sub`, `sub(2x)`, `not sub`) directly in model choices. All indicators are disabled by default.
+
+### Changed
+
+- `Characters`, `Backgrounds`, `Personas`, and `Lorebooks` now integrate into NastyTavern's main workspace/navigation model while preserving SillyTavern's native data and handlers; third-party Persona Library keeps priority when installed.
+- The updater now detects maintenance changes from the published manifest/changelog and reloads the page automatically after a successful update.
+
+### Fixed
+
+- Fixed the mobile chat message structure so avatar/name metadata and message content use separate layout regions, preventing text, reasoning, or media from flowing underneath taller avatars while preserving native swipe behavior.
+- Fixed embedded Character Lore import/linking when SillyTavern sanitizes filesystem-invalid characters in Lorebook names, so imported Lorebooks remain correctly attached to their Character Card.
+- Fixed Lorebook **New**, **Import**, and **Delete** workflows inside the detached NastyTavern World Info workspace: newly created/imported books now appear immediately without reloading, and deleting the currently open Lorebook returns directly to the Lorebooks gallery.
+- Fixed Story Timeline navigation so **Go to** and **New Branch** keep the timeline canvas open while SillyTavern changes or branches the active chat.
+- Improved the mobile **Settings → Models** Connection Profile layout: the profile selector now uses its own row, with the six profile actions grouped on the row below.
+- Fixed the NastyTavern main app bar being hidden whenever SillyTavern Waifu Mode is active; the header now remains available and Waifu Mode content/panels respect its height.
+- Fixed **Create Character / Save** with Moonlit Echoes by preserving the native `#form_create` association when NastyTavern temporarily detaches SillyTavern submit controls for compatibility layout handling.
+- Fixed the Community Privacy Notice on phones and low-height screens so its content scrolls correctly and **Save & return** remains reachable.
+
+---
+
+## v0.1.7
+
+Release focused on large-library performance, responsive navigation, and compatibility with SillyTavern and third-party extensions.
+
+### Added
+
+- Added first-class **Persona Library** and **World Info Gallery** workspace integration: the `Personas` and `Lorebooks` navigation automatically delegates to the installed extension while keeping NastyTavern's native workflows as fallback.
+- Added Moonlit Echoes settings-popout integration to the shared NastyTavern side-panel/modal system.
+- Added a **Character Libraries** flyout in the main navigation, grouping Character Library and DataCat without adding separate global launchers.
+
+### Changed
+
+- Community shared Character Cards now use `nt_description` as their primary short description, with the legacy `description` field kept as a compatibility fallback.
+- Character Libraries now behaves like a normal primary navigation destination and opens its available library sources in a compact flyout to the right of the sidebar.
+- Phone and narrow layouts now always use the compact main navigation while preserving the user's desktop expanded/compact preference when returning to desktop.
+- MovingUI keeps ownership of its saved movable geometry when enabled instead of being overridden by NastyTavern layout rules.
+
+### Performance
+
+- Reworked Character Library for very large collections with off-screen rendering containment, progressive avatar work, lightweight tag indexing, and targeted DOM updates instead of broad per-card mutation tracking.
+- Reduced repeated full-library work by preferring SillyTavern's existing tag index when available and avoiding expensive attribute-driven rescans across large character collections.
+
+### Fixed
+
+- Fixed the remaining artificial right-side reservation so a 100% chat width can use the full available workspace.
+- Fixed the disconnected model status so clicking `No connection…` opens NastyTavern Settings directly on the Model section instead of exposing the native Models & API workspace.
+- Fixed Character Management card geometry and label alignment across the default UI and Moonlit Echoes, including the Create/Edit Character layout, action bar, spacing, and scrolling behavior.
+- Fixed compact navigation alignment for the Character Libraries launcher.
+- Fixed third-party controls injected into SillyTavern's top bar being visible but unclickable by removing the full-width NastyTavern click shield while keeping NastyTavern's own controls interactive. This also restores DataCat's native top launcher without a DataCat-specific click workaround.
+
+### Compatibility
+
+- Persona Library and World Info Gallery keep ownership of their own DOM, click handlers, detail/editor windows, and overlays inside the NastyTavern workspace; redundant native World Info heading, drawer toggle, and editor pin/lock chrome is hidden while World Info Gallery is active.
+- Audited NastyTavern overlay, pointer-event, z-index, and movable-panel behavior to reduce interference with third-party extension interfaces and preserve native extension click handlers where possible.
+
+---
+
+## v0.1.6
+
+Update focused on responsive chat scaling, native utility panels, NastyTavern Settings cleanup, Character Library integration, and first-pass large-library performance improvements.
+
+### Added
+
+- Integrated Character Library into NastyTavern so it fits the main application workspace and navigation instead of behaving like a separate overlay.
+
+### Changed
+
+- Character Library now avoids repeated full-library scans during routine UI mutations; tag usage counts are cached for the active library session and invalidated when the library is reopened.
+- Character Library observers now batch updates and ignore cosmetic mutation churn instead of rebuilding work on every class/style change.
+- Chat scaling now follows a percentage-based width model instead of a fixed pixel width, allowing the conversation to adapt more naturally across desktop sizes and split-screen layouts.
+- Author's Note now uses the NastyTavern native modal-panel styling and participates correctly in the responsive chat workspace.
+- CFG Scale now uses the same NastyTavern modal-panel treatment, with corrected header structure, sizing, and chat layout adaptation.
+- Token Probabilities now uses the same shared NastyTavern modal-panel treatment for a consistent native-tools experience.
+- Removed the obsolete chat/Layout parameters from NT Settings.
+
+### Performance
+
+- Optimized Character Library for very large collections (including libraries with thousands of characters) by caching tag usage counts, batching mutation-driven updates, and avoiding repeated full-library DOM/style scans.
+- Reduced unnecessary Character Library observer work so cosmetic class/style churn no longer triggers expensive rebuild paths.
+
+### Fixed
+
+- Removed per-card `getComputedStyle()` scans from Character Library empty-state detection, avoiding forced style/layout work across very large libraries.
+- Fixed repeated observer teardown/recreation for Character Library pagination and redundant tag sorting when the library DOM has not changed.
+- Fixed chat width restoration when native side panels are closed.
+- Fixed CFG Scale opening with broken or persisted narrow geometry.
+- Fixed panel headers and window controls so they no longer overlap collapsible section controls.
+
+---
+
+## v0.1.5
+
+Update focused on supply-chain hardening and tightening the Community maintenance trust boundary.
+
+### Added
+
+- Added a permanent Home release changelog that shows the latest build published on GitHub and exposes an explicit `Update now` action when a newer version or maintenance revision is available.
+- Vendored the exact `@supabase/supabase-js@2.116.0` browser bundle and its license inside the extension source.
+- Added a server-scheduled Community Storage cleanup job backed by a private maintenance credential.
+
+### Changed
+
+- Community now loads the Supabase JavaScript client from the installed NastyTavern extension instead of jsDelivr.
+- Community clients no longer invoke the global `community-storage-cleanup` maintenance function.
+- Storage cleanup is now invoked by a Supabase Cron job instead of ordinary authenticated browsers.
+
+### Security
+
+- Removed the runtime CDN trust boundary for the Supabase browser client; the exact executed bundle is now part of the auditable release.
+- `community-storage-cleanup` now uses a private server-only maintenance credential instead of user-session authorization.
+- The maintenance credential is not exposed to `anon` or `authenticated` database roles.
+- Disabled the legacy `smart-task` cleanup deployment with an inert HTTP 410 tombstone so it can no longer perform privileged maintenance.
+
+### Fixed
+
+- The Home updater now supports a manifest maintenance revision, so fixes published on the same semantic version are detected without relying on Git checkout state.
+
+### Compatibility
+
+- Community behavior and user-facing account flows are unchanged; the hardening only changes dependency delivery and backend maintenance execution.
+
+---
+
+## v0.1.4
+
+Update focused on Community privacy controls, backend transparency, security hardening, and interface consistency.
+
+### Added
+
+- Explicit Community network consent before loading the Supabase client or contacting the Community backend.
+- Independent opt-in for Community online presence and typing broadcasts.
+- Quick Community presence switch in the account menu, synchronized with Settings → Modules.
+- Configurable `Ctrl+Alt+O` shortcut for toggling Community presence.
+- Community privacy and data-flow documentation covering Supabase, Google OAuth, jsDelivr, and Cloudflare R2.
+- Public backend source for the Community and Nasty Catalogue security-relevant server components.
+
+### Changed
+
+- Existing v0.1.3 sessions no longer cause an automatic Community connection after upgrading; Community network access must be explicitly enabled once.
+- Nasty Catalogue now uses the same Community network consent gate and cannot initialize Supabase independently.
+- Community membership no longer relies on a persisted session correlation token.
+- NastyTavern Settings actions and shortcut recorder controls now use the same NastyTavern control styling as the rest of the interface.
+- Community sign-in and sign-up fields and actions now share the same NastyTavern form and button styling.
+
+### Fixed
+- Community module visibility no longer acts as a substitute for network and privacy consent.
+- Disabling Community now closes active Community Realtime subscriptions and stops the extension's Supabase auth refresh loop.
+- Fixed unstyled `Reset`, `Export`, and `Import` actions in NastyTavern Settings.
+- Fixed unstyled keyboard shortcut recorder buttons.
+- Fixed inconsistent styling across Community email, password, username, Google OAuth, and account-mode controls.
+- Removed a duplicated settings row label that could produce malformed Interface settings markup.
+
+### Security
+
+- Supabase function privileges now use an explicit allowlist for authenticated client RPCs.
+- Internal trigger and helper functions are no longer directly executable by `anon` or ordinary authenticated clients.
+- All NastyTavern `nt_*` functions are no longer executable by the anonymous role.
+- `nt_role_rank` now uses an explicit immutable search path.
+- Persisted Community session correlation tokens are no longer used by the v0.1.4 client.
+
+### Compatibility
+
+- The legacy two-argument `nt_join_channel(uuid, text)` server RPC remains temporarily available for v0.1.3 clients, but discards the supplied session token and stores `NULL`.
+
+---
+
+## v0.1.3
+
+Update focused on Nasty Catalogue and improvements to the main SillyTavern management interfaces.
+
+### Added
+
+- Added **Nasty Catalogue** for Character Cards and Lorebooks.
+- Added Discover, Popular, Newest, and Top Rated catalogue sections.
+- Added Character Card and Lorebook search.
+- Added SFW and NSFW filtering.
+- Added resource ratings and creator pages.
+- Added direct download and **Import into SillyTavern**.
+- Added resource collections with public and private visibility.
+- Added Character Card versions and modifications.
+- Added automatic protection against duplicate uploads.
+- Added resource reporting.
+- Added Character Card details.
+- Added direct Nasty Catalogue access from Character Management and Home.
+- Added easier Character Card publishing and sharing.
+
+### Changed
+
+- Redesigned Character Management.
+- Improved character creation and editing.
+- Improved tags and filtering.
+- Improved dialogue example editing.
+- Improved Groups integration.
+- Redesigned the Lorebook interface.
+- Improved Lorebook entry navigation and editing workspace.
+- Improved portrait and landscape mobile support for Lorebooks.
+- Improved Community and Catalogue integration.
+- Redesigned the Extensions interface.
+- Improved access to installed extensions and extension settings.
+- Improved Community resource integration, user profiles, and resource statistics.
+- Improved responsive behavior and several mobile interfaces.
+- Improved navigation and visual consistency between NastyTavern sections.
+
+### Fixed
+
+- Various Community, UI, compatibility, and usability issues.
+
+---
+
+## v0.1.2
+
+Update focused on the Home Dashboard and the first NastyTavern Community experience.
+
+### Added
+
+- Added the **Home Dashboard** with recent characters, favorites, quick actions, and Community panels.
+- Added **NastyTavern Community Chat**.
+- Added email/password and Google authentication.
+- Added mentions and unread indicators.
+- Added typing indicators and message search.
+- Added Community profiles.
+- Added Character Card and Lorebook sharing.
+- Added direct download and **Import into SillyTavern**.
+- Added Community sharing actions inside SillyTavern.
+- Added Character Card and Lorebook detail views.
+
+### Changed
+
+- Improved Home and Community mobile layouts.
+
+---
+
+## v0.1.1
+
+Update focused on integrated tools, mobile support, and everyday usability.
+
+### Added
+
+- Added full phone responsiveness for portrait and landscape.
+- Added the **Nasty Chat Bar**.
+- Added Story Timeline.
+- Added Context / Token Inspector.
+- Added Variable Manager.
+- Added World Info Inspector.
+- Added Bookmarks and Notes.
+- Added Calendar & Schedule.
+- Added Health & Performance diagnostics.
+- Added Focus Mode.
+
+### Changed
+
+- Expanded NastyTavern Settings and keyboard shortcut management.
+- Improved general navigation.
