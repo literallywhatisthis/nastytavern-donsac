@@ -32830,6 +32830,8 @@ body.mt-enabled #chat .mes .timestamp::before {
 }
 
 body.mt-enabled #chat .mes {
+  /* Containing block for absolute meta boxes + name ::after. */
+  position: relative !important;
   /* Equal gaps; row starts under the name (clear of the 90px avatar at left:-90). */
   --nt-mes-meta-gap: 6px;
   --nt-mes-meta-w: 4.25rem;
@@ -34302,10 +34304,11 @@ html body.mt-enabled .mt-connection.is-offline .mt-connection-dot {
   box-shadow: 0 0 0 4px rgba(255, 105, 120, .1) !important;
 }
 
-/* ---- Meta restore (0.1.14-donsac.8): token / #id / timer visible under name ----
-   Previous negative top (-118px) pushed boxes above .mes and off-screen.
-   Keep them inside the message under ::after name; only :empty slots hide. */
+/* ---- Meta restore: token / #id / timer visible under name ----
+   .mes must be position:relative so absolute meta boxes anchor per message
+   (not the chat pane). No negative top. Only :empty slots hide. */
 html body.mt-enabled #chat .mes {
+  position: relative !important;
   overflow: visible !important;
 }
 html body.mt-enabled #chat .mes .tokenCounterDisplay:not(:empty),
