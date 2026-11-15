@@ -32830,6 +32830,21 @@ body.mt-enabled #chat .mes .mes_timer {
   border-radius: 0;
 }
 
+/* Hide bordered meta slots when the counter is off / empty (no tofu box). */
+body.mt-enabled #chat .mes .tokenCounterDisplay:empty,
+body.mt-enabled #chat .mes .mesIDDisplay:empty,
+body.mt-enabled #chat .mes .mes_timer:empty {
+  display: none !important;
+  border: 0 !important;
+  padding: 0 !important;
+  width: 0 !important;
+  min-width: 0 !important;
+  height: 0 !important;
+  overflow: hidden !important;
+  visibility: hidden !important;
+  pointer-events: none !important;
+}
+
 body.mt-enabled #chat .mes .tokenCounterDisplay { top: -125px; right: -30px; }
 body.mt-enabled #chat .mes .mesIDDisplay { top: -125px; right: -100px; }
 body.mt-enabled #chat .mes .mes_timer { top: -125px; right: -175px; }

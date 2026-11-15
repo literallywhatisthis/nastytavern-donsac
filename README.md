@@ -6,7 +6,7 @@ Single SillyTavern extension = **NastyTavern UX** + **Donsac** black/grayscale s
 
 - Upstream features: [AnNastyLoneGirl/NastyTavern-UI](https://github.com/AnNastyLoneGirl/NastyTavern-UI) `0.1.14`
 - Style: Donsac theme (black / `#d6d6d6`, square chrome, Arsenal/Saira/Voltaire)
-- Fork version: `0.1.14-donsac.2`
+- Fork version: `0.1.14-donsac.3`
 - Repo: **private** — Install from URL may need GitHub auth (see below)
 
 ## Install

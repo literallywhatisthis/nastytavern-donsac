@@ -4,6 +4,16 @@ All notable changes to NastyTavern UI are documented here.
 
 ---
 
+## v0.1.14-donsac.3
+
+### Fixed
+
+- Hide empty bordered message meta boxes (`.mes_timer` / `.tokenCounterDisplay` / `.mesIDDisplay`) when the counter is off or has no content.
+
+**Reload the extension / pull latest** after updating.
+
+---
+
 ## v0.1.14-donsac.2
 
 ### Fixed (Donsac fork UI feedback)
