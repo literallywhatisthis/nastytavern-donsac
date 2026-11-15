@@ -6,7 +6,7 @@
   "js": "index.js",
   "css": "style.css",
   "author": "AnNastyLoneGirl + OpenAI; Donsac restyle fork",
-  "version": "0.1.14-donsac.11",
+  "version": "0.1.14-donsac.12",
   "homePage": "https://github.com/literallywhatisthis/nastytavern-donsac",
   "auto_update": false,
   "minimum_client_version": "1.18.0",
@@ -17,5 +17,5 @@
     "disable": "onDisable",
     "clean": "onClean"
   },
-  "revision": 120
+  "revision": 121
 }
