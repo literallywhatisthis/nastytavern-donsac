@@ -16026,9 +16026,20 @@ body.mt-enabled .nt-home-hero-actions button svg {
   fill: currentColor;
 }
 
+/* Favorites empty: heading + subtitle must stack (not inline-overlap). */
+.nt-home-favorites-empty > div,
+.nt-home-favorites-empty-copy {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  max-width: 480px;
+}
+
 .nt-home-favorites-empty b,
 .nt-home-list-empty b,
 .nt-home-getting-started h3 {
+  display: block;
   margin: 0;
   color: var(--mt-text-2);
   font-size: var(--nt-font-section-title);
@@ -16042,7 +16053,9 @@ body.mt-enabled .nt-home-hero-actions button svg {
 .nt-home-getting-started p,
 .nt-home-community-empty small,
 .nt-home-community-loading small {
+  display: block;
   max-width: 480px;
+  margin: 0;
   color: var(--mt-text-3);
   font-size: var(--nt-font-meta);
   line-height: 1.45;
@@ -32826,7 +32839,8 @@ body.mt-enabled #chat .mes .tokenCounterDisplay,
 body.mt-enabled #chat .mes .mesIDDisplay,
 body.mt-enabled #chat .mes .mes_timer {
   position: absolute;
-  top: -95px;
+  /* Raised under the name (~15px visual gap); still clear of the avatar. */
+  top: -118px;
   left: auto;
   right: auto;
   z-index: 900;
@@ -33286,10 +33300,13 @@ body.mt-enabled input[type='checkbox']:checked {
   background: var(--sub);
 }
 
+/* Do not paint the range input itself as a fat gray bar — track/thumb
+   pseudo-elements own the Donsac slider look (see hard sweep below). */
 body.mt-enabled input[type="range"] {
-  height: 2px !important;
+  height: auto !important;
+  min-height: 18px !important;
   border-radius: 0;
-  background: var(--subsub);
+  background: transparent !important;
 }
 
 body.mt-enabled .swipes-counter {
@@ -33895,4 +33912,378 @@ body.mt-enabled .nt-native-workspace {
   color: #d6d6d6;
   --SmartThemeBodyColor: #d6d6d6;
   --active: #7a9bb8;
+}
+
+/* =============================================================================
+   Donsac hard sweep (0.1.14-donsac.6)
+   Hardcoded colors (not var(--mt-accent)) so leftover ST greens / gray accent
+   settings cannot win. Must stay last in the cascade.
+   ============================================================================= */
+
+html body.mt-enabled {
+  --mt-accent: #7a9bb8 !important;
+  --mt-accent-contrast: #0a0e14 !important;
+  --active: #7a9bb8 !important;
+  --golden: #7a9bb8 !important;
+  --SmartThemeBodyColor: #d6d6d6 !important;
+  --SmartThemeEmColor: #aeaeae !important;
+  --SmartThemeQuoteColor: #a8a8a8 !important;
+  --SmartThemeUnderlineColor: #a8a8a8 !important;
+  --SmartThemeBorderColor: #7a7a7a !important;
+  --SmartThemeChatTintColor: #000000 !important;
+  --SmartThemeBlurTintColor: #0a0a0a !important;
+  --SmartThemeBotMesBlurTintColor: #000000 !important;
+  --SmartThemeUserMesBlurTintColor: #000000 !important;
+  --SmartThemeShadowColor: transparent !important;
+  --SmartThemeCheckboxCheckColor: #7a9bb8 !important;
+  --SmartThemeCheckboxBgColor: #000000 !important;
+  --SmartThemeCheckboxBorderColor: #7a7a7a !important;
+  accent-color: #7a9bb8 !important;
+  caret-color: #7a9bb8;
+  color: #d6d6d6;
+}
+
+/* ---- EVERY range input: thin gray track + square blue thumb ---- */
+html body.mt-enabled input[type="range"],
+html body.mt-enabled input[type="range"].neo-range-slider,
+html body.mt-enabled .neo-range-slider,
+html body.mt-enabled .neo-range-input,
+html body.mt-enabled .range-block-range input[type="range"],
+html body.mt-enabled .nt-modal-opacity-control input[type="range"],
+html body.mt-enabled .nt-chat-appearance-number-control input[type="range"],
+html body.mt-enabled .nt-chat-appearance-alpha-control input[type="range"],
+html body.mt-enabled .nt-chat-appearance-number-editor input[type="range"],
+html body.mt-enabled .nt-pref-setting-control input[type="range"],
+html body.mt-enabled #nt-character-create-modal input[type="range"],
+html body.mt-enabled #form_create input[type="range"],
+html body.mt-enabled #user-settings-block input[type="range"],
+html body.mt-enabled #AdvancedFormatting input[type="range"],
+html body.mt-enabled #rm_api_block input[type="range"],
+html body.mt-enabled #left-nav-panel input[type="range"],
+html body.mt-enabled #right-nav-panel input[type="range"],
+html body.mt-enabled #WorldInfo input[type="range"],
+html body.mt-enabled .mt-settings-native-host input[type="range"],
+html body.mt-enabled .popup input[type="range"],
+html body.mt-enabled .mt-native-panel input[type="range"] {
+  -webkit-appearance: none !important;
+  appearance: none !important;
+  width: 100%;
+  height: 18px !important;
+  min-height: 18px !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  outline: none !important;
+  accent-color: #7a9bb8 !important;
+  color: #7a9bb8 !important;
+  cursor: pointer;
+}
+
+html body.mt-enabled input[type="range"]::-webkit-slider-runnable-track,
+html body.mt-enabled .neo-range-slider::-webkit-slider-runnable-track,
+html body.mt-enabled .nt-modal-opacity-control input[type="range"]::-webkit-slider-runnable-track,
+html body.mt-enabled .nt-chat-appearance-number-control input[type="range"]::-webkit-slider-runnable-track,
+html body.mt-enabled .nt-pref-setting-control input[type="range"]::-webkit-slider-runnable-track {
+  height: 3px !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: #7a7a7a !important;
+  box-shadow: none !important;
+}
+
+html body.mt-enabled input[type="range"]::-webkit-slider-thumb,
+html body.mt-enabled .neo-range-slider::-webkit-slider-thumb,
+html body.mt-enabled .nt-modal-opacity-control input[type="range"]::-webkit-slider-thumb,
+html body.mt-enabled .nt-chat-appearance-number-control input[type="range"]::-webkit-slider-thumb,
+html body.mt-enabled .nt-pref-setting-control input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none !important;
+  appearance: none !important;
+  width: 14px !important;
+  height: 14px !important;
+  margin-top: -5.5px !important;
+  border: 1px solid #7a9bb8 !important;
+  border-radius: 0 !important;
+  background: #7a9bb8 !important;
+  box-shadow: none !important;
+}
+
+html body.mt-enabled input[type="range"]::-moz-range-track,
+html body.mt-enabled .nt-modal-opacity-control input[type="range"]::-moz-range-track,
+html body.mt-enabled .nt-chat-appearance-number-control input[type="range"]::-moz-range-track,
+html body.mt-enabled .nt-pref-setting-control input[type="range"]::-moz-range-track {
+  height: 3px !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: #7a7a7a !important;
+}
+
+html body.mt-enabled input[type="range"]::-moz-range-progress,
+html body.mt-enabled .nt-modal-opacity-control input[type="range"]::-moz-range-progress,
+html body.mt-enabled .nt-chat-appearance-number-control input[type="range"]::-moz-range-progress,
+html body.mt-enabled .nt-pref-setting-control input[type="range"]::-moz-range-progress {
+  height: 3px !important;
+  border-radius: 0 !important;
+  background: #7a9bb8 !important;
+}
+
+html body.mt-enabled input[type="range"]::-moz-range-thumb,
+html body.mt-enabled .nt-modal-opacity-control input[type="range"]::-moz-range-thumb,
+html body.mt-enabled .nt-chat-appearance-number-control input[type="range"]::-moz-range-thumb,
+html body.mt-enabled .nt-pref-setting-control input[type="range"]::-moz-range-thumb {
+  width: 14px !important;
+  height: 14px !important;
+  border: 1px solid #7a9bb8 !important;
+  border-radius: 0 !important;
+  background: #7a9bb8 !important;
+  box-shadow: none !important;
+}
+
+/* jQuery UI / legacy ST slider chrome if present */
+html body.mt-enabled .ui-slider,
+html body.mt-enabled .ui-slider-horizontal {
+  height: 3px !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: #7a7a7a !important;
+}
+html body.mt-enabled .ui-slider-range,
+html body.mt-enabled .ui-slider-range-min,
+html body.mt-enabled .ui-slider-range-max {
+  background: #7a9bb8 !important;
+  border: 0 !important;
+}
+html body.mt-enabled .ui-slider-handle {
+  width: 14px !important;
+  height: 14px !important;
+  top: -5.5px !important;
+  margin: 0 !important;
+  border: 1px solid #7a9bb8 !important;
+  border-radius: 0 !important;
+  background: #7a9bb8 !important;
+  box-shadow: none !important;
+}
+
+/* ---- Remaining green/lime/olive highlights → muted blue ---- */
+html body.mt-enabled :is(
+  .nt-chat-appearance-role-tab.is-active,
+  .nt-chat-appearance-subtab.is-active,
+  .nt-chat-appearance-category.is-active,
+  .nt-tool-tabs button.is-active,
+  .nt-var-tabs button.is-active,
+  .nt-home-collection-tabs button.is-active,
+  .nt-home-collection-tabs button[aria-selected="true"],
+  .mt-settings-category.is-active,
+  .mt-settings-subnav > button.is-active,
+  .mt-nav button.is-active,
+  .menu_button.fav_on,
+  .menu_button.active,
+  .menu_button.selected,
+  .fav_on,
+  .toggle_on,
+  .toggle_button.on,
+  .filteredByFavorites,
+  .drawer-icon.openIcon,
+  .world_set,
+  .selected,
+  .is-active,
+  .is-selected,
+  .isSelected
+) {
+  --active: #7a9bb8;
+}
+
+html body.mt-enabled .nt-chat-appearance-role-tab.is-active {
+  border-bottom-color: #7a9bb8 !important;
+  color: #d6d6d6 !important;
+}
+html body.mt-enabled .nt-chat-appearance-subtab.is-active,
+html body.mt-enabled .nt-chat-appearance-category.is-active {
+  border-color: #7a9bb8 !important;
+  color: #d6d6d6 !important;
+  background: color-mix(in srgb, #7a9bb8 10%, transparent) !important;
+}
+html body.mt-enabled .mt-nav button.is-active {
+  border-left-color: #7a9bb8 !important;
+  color: #7a9bb8 !important;
+}
+html body.mt-enabled .mt-nav button.is-active::before {
+  background: #7a9bb8 !important;
+}
+html body.mt-enabled .mt-settings-subnav > button.is-active,
+html body.mt-enabled .mt-settings-category.is-active {
+  border-color: #7a9bb8 !important;
+  color: #7a9bb8 !important;
+}
+html body.mt-enabled :is(.fav_on, .menu_button.fav_on, .toggle_on, .filteredByFavorites, .world_set) {
+  color: #7a9bb8 !important;
+  border-color: color-mix(in srgb, #7a9bb8 62%, #7a7a7a) !important;
+}
+html body.mt-enabled input[type="checkbox"]:checked,
+html body.mt-enabled input[type="radio"]:checked {
+  accent-color: #7a9bb8 !important;
+  background-color: #7a9bb8 !important;
+  border-color: #7a9bb8 !important;
+}
+html body.mt-enabled :focus-visible {
+  outline-color: #7a9bb8;
+}
+html body.mt-enabled a:not(.menu_button):not(.nt-home-update-now) {
+  color: color-mix(in srgb, #7a9bb8 82%, #d6d6d6);
+}
+
+/* Kill common ST green utility classes if present */
+html body.mt-enabled :is(.success, .text-success, .bg-success, .border-success, .green, .lime, .success_button) {
+  color: #7a9bb8 !important;
+  border-color: #7a9bb8 !important;
+}
+
+/* ---- Create Character: Behavior tab underline + close X → muted blue (never ST lime) ---- */
+html body.mt-enabled #nt-character-create-modal .nt-character-create-tablist button.is-active {
+  color: #d6d6d6 !important;
+  border-bottom-color: #7a9bb8 !important;
+  background: color-mix(in srgb, #7a9bb8 10%, transparent) !important;
+}
+html body.mt-enabled #nt-character-create-modal .nt-modal-close,
+html body.mt-enabled .nt-modal-shell .nt-modal-close,
+html body.mt-enabled .nt-modal-close {
+  border-color: #7a7a7a !important;
+  color: #d6d6d6 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+html body.mt-enabled #nt-character-create-modal .nt-modal-close:hover,
+html body.mt-enabled .nt-modal-shell .nt-modal-close:hover,
+html body.mt-enabled .nt-modal-close:hover {
+  border-color: #7a9bb8 !important;
+  color: #7a9bb8 !important;
+  background: color-mix(in srgb, #7a9bb8 8%, transparent) !important;
+}
+html body.mt-enabled #nt-character-create-modal .nt-modal-close svg,
+html body.mt-enabled .nt-modal-close svg {
+  fill: currentColor !important;
+  color: inherit !important;
+}
+
+/* ---- Talkativeness + every similar range: kill fat grey fill; thin #7a7a7a track ----
+   ST custom CSS / theme often paints the <input> itself as a thick --subsub bar.
+   Force transparent fill + 3px track + square blue thumb, including #talkativeness_slider. */
+html body.mt-enabled #talkativeness_slider,
+html body.mt-enabled #nt-character-create-modal #talkativeness_slider,
+html body.mt-enabled #form_create #talkativeness_slider,
+html body.mt-enabled #talkativeness_div input[type="range"],
+html body.mt-enabled #nt-character-create-modal #talkativeness_div input[type="range"],
+html body.mt-enabled input[type="range"].neo-range-slider,
+html body.mt-enabled .neo-range-slider,
+html body.mt-enabled .range-block-range input[type="range"],
+html body.mt-enabled input[type="range"] {
+  -webkit-appearance: none !important;
+  appearance: none !important;
+  height: 14px !important;
+  min-height: 14px !important;
+  max-height: 14px !important;
+  margin: 6px 0 !important;
+  padding: 0 !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  /* Never let the control body paint as a fat grey slab */
+  background: transparent !important;
+  background-color: transparent !important;
+  background-image: none !important;
+  box-shadow: none !important;
+  outline: none !important;
+  accent-color: #7a9bb8 !important;
+  color: #7a9bb8 !important;
+}
+
+html body.mt-enabled #talkativeness_slider::-webkit-slider-runnable-track,
+html body.mt-enabled #nt-character-create-modal #talkativeness_slider::-webkit-slider-runnable-track,
+html body.mt-enabled #talkativeness_div input[type="range"]::-webkit-slider-runnable-track,
+html body.mt-enabled input[type="range"].neo-range-slider::-webkit-slider-runnable-track,
+html body.mt-enabled .neo-range-slider::-webkit-slider-runnable-track,
+html body.mt-enabled .range-block-range input[type="range"]::-webkit-slider-runnable-track,
+html body.mt-enabled input[type="range"]::-webkit-slider-runnable-track {
+  height: 3px !important;
+  min-height: 3px !important;
+  max-height: 3px !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: #7a7a7a !important;
+  background-color: #7a7a7a !important;
+  box-shadow: none !important;
+}
+
+html body.mt-enabled #talkativeness_slider::-webkit-slider-thumb,
+html body.mt-enabled #nt-character-create-modal #talkativeness_slider::-webkit-slider-thumb,
+html body.mt-enabled #talkativeness_div input[type="range"]::-webkit-slider-thumb,
+html body.mt-enabled input[type="range"].neo-range-slider::-webkit-slider-thumb,
+html body.mt-enabled .neo-range-slider::-webkit-slider-thumb,
+html body.mt-enabled .range-block-range input[type="range"]::-webkit-slider-thumb,
+html body.mt-enabled input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none !important;
+  appearance: none !important;
+  width: 14px !important;
+  height: 14px !important;
+  margin-top: -5.5px !important;
+  border: 1px solid #7a9bb8 !important;
+  border-radius: 0 !important;
+  background: #7a9bb8 !important;
+  background-color: #7a9bb8 !important;
+  box-shadow: none !important;
+}
+
+html body.mt-enabled #talkativeness_slider::-moz-range-track,
+html body.mt-enabled #nt-character-create-modal #talkativeness_slider::-moz-range-track,
+html body.mt-enabled #talkativeness_div input[type="range"]::-moz-range-track,
+html body.mt-enabled input[type="range"]::-moz-range-track {
+  height: 3px !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: #7a7a7a !important;
+  background-color: #7a7a7a !important;
+}
+
+html body.mt-enabled #talkativeness_slider::-moz-range-progress,
+html body.mt-enabled #nt-character-create-modal #talkativeness_slider::-moz-range-progress,
+html body.mt-enabled input[type="range"]::-moz-range-progress {
+  height: 3px !important;
+  border-radius: 0 !important;
+  background: #7a9bb8 !important;
+}
+
+html body.mt-enabled #talkativeness_slider::-moz-range-thumb,
+html body.mt-enabled #nt-character-create-modal #talkativeness_slider::-moz-range-thumb,
+html body.mt-enabled input[type="range"]::-moz-range-thumb {
+  width: 14px !important;
+  height: 14px !important;
+  border: 1px solid #7a9bb8 !important;
+  border-radius: 0 !important;
+  background: #7a9bb8 !important;
+  box-shadow: none !important;
+}
+
+/* Parent chrome around talkativeness must not fake a fat track either */
+html body.mt-enabled #talkativeness_div,
+html body.mt-enabled #nt-character-create-modal #talkativeness_div,
+html body.mt-enabled .range-block-range,
+html body.mt-enabled .neo-range-slider {
+  background: transparent !important;
+  background-color: transparent !important;
+}
+
+/* Favorites empty-state stack (hard sweep reinforcement) */
+html body.mt-enabled .nt-home-favorites-empty > div,
+html body.mt-enabled .nt-home-favorites-empty-copy {
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: center !important;
+  gap: 8px !important;
+}
+html body.mt-enabled .nt-home-favorites-empty b,
+html body.mt-enabled .nt-home-favorites-empty small,
+html body.mt-enabled .nt-home-list-empty b,
+html body.mt-enabled .nt-home-list-empty small {
+  display: block !important;
 }

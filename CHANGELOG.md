@@ -4,6 +4,19 @@ All notable changes to NastyTavern UI are documented here.
 
 ---
 
+## v0.1.14-donsac.6
+
+### Fixed
+
+- Hard sweep: force every range (Talkativeness included) off fat grey fill → thin `#7a7a7a` track + square `#7a9bb8` thumb; migrate legacy gray/lime accents to `#7a9bb8`.
+- Remaining green/lime chrome (Create Character Behavior tab underline, modal close X, active tabs/filters) → muted blue / gray borders.
+- Message meta boxes raised closer under the name (`top: -118px`), still clear of the avatar.
+- Home Favorites empty state: stack “No favorite characters yet” and the subtitle on separate lines with a gap (no overlap).
+
+**Reload the extension / pull latest** after updating — `auto_update` is false.
+
+---
+
 ## v0.1.14-donsac.5
 
 ### Fixed

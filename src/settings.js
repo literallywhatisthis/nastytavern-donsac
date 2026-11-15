@@ -3,7 +3,8 @@ const MODULE = 'modern_tavern_ui';
 
 export const defaults = Object.freeze({
     enabled: true,
-    accent: '#d6d6d6',
+    // Donsac muted steel blue — not gray-as-accent, not ST lime.
+    accent: '#7a9bb8',
     density: 'comfortable',
     radius: 0,
     navWidth: 222,
@@ -242,6 +243,18 @@ export function getSettings() {
     if (settings.navHidden) {
         settings.navHidden = false;
         settings.compactNav = true;
+        context.saveSettingsDebounced?.();
+    }
+    // Migrate legacy gray-as-accent and leftover green/lime accents to Donsac blue.
+    const accentNorm = String(settings.accent || '').trim().toLowerCase();
+    const legacyAccents = new Set([
+        '#d6d6d6', '#e0e0e0', '#cfcfcf', '#aeaeae', '#a8a8a8',
+        '#0f0', '#00ff00', '#0f0f0f', '#7fff00', '#39ff14', '#32cd32',
+        '#45ce7a', '#58b600', '#7fcdb1', '#9acd32', '#adff2f', '#90ee90',
+        '#6b8e23', '#556b2f', '#808000', 'lime', 'limegreen', 'chartreuse', 'olivedrab',
+    ]);
+    if (!accentNorm || legacyAccents.has(accentNorm)) {
+        settings.accent = '#7a9bb8';
         context.saveSettingsDebounced?.();
     }
     return settings;
