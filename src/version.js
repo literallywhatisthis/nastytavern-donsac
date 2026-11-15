@@ -1,2 +1,2 @@
 // Keep UI version labels in sync with manifest.json during releases.
-export const NASTYTAVERN_VERSION = '0.1.14-donsac.10';
+export const NASTYTAVERN_VERSION = '0.1.14-donsac.11';

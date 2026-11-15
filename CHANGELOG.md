@@ -4,6 +4,16 @@ All notable changes to NastyTavern UI are documented here.
 
 ---
 
+## v0.1.14-donsac.11
+
+### Fixed
+
+- Chat meta boxes: ST places token / `#id` / timer inside `.mesAvatarWrapper`. Pin that wrapper to the message top and keep `top: 56px` so boxes sit under the name (pre-donsac.10 later-message header placement). Greeting/`mesid="0"` only: reinforce the same via `#chat .mes[mesid="0"] > .mesAvatarWrapper > …` (no `:first-child` / `:first-of-type`). Removed donsac.10’s `.mes_block`/`.ch_name` neutralization that over-matched later messages.
+
+**Reload the extension / pull latest** after updating — `auto_update` is false.
+
+---
+
 ## v0.1.14-donsac.10
 
 ### Fixed
