@@ -34346,3 +34346,69 @@ html body.mt-enabled #chat .mes .mesIDDisplay:empty,
 html body.mt-enabled #chat .mes .mes_timer:empty {
   display: none !important;
 }
+
+/* ---- First/greeting message only (mesid 0 / first .mes) ----
+   Nested .mes_block (or similar) can become the absolute containing block, so
+   top:56px lands on the body text instead of the header under the name.
+   Later messages are already correct — do not change their meta top.
+   Neutralize nested positioning so meta anchors to .mes; keep positive top. */
+html body.mt-enabled #chat .mes[mesid="0"],
+html body.mt-enabled #chat .mes:first-child,
+html body.mt-enabled #chat .mes:first-of-type {
+  position: relative !important;
+  overflow: visible !important;
+}
+html body.mt-enabled #chat .mes[mesid="0"] > .mes_block,
+html body.mt-enabled #chat .mes:first-child > .mes_block,
+html body.mt-enabled #chat .mes:first-of-type > .mes_block,
+html body.mt-enabled #chat .mes[mesid="0"] .ch_name,
+html body.mt-enabled #chat .mes:first-child .ch_name,
+html body.mt-enabled #chat .mes:first-of-type .ch_name {
+  position: static !important;
+  transform: none !important;
+  filter: none;
+  contain: none;
+}
+html body.mt-enabled #chat .mes[mesid="0"] .tokenCounterDisplay:not(:empty),
+html body.mt-enabled #chat .mes[mesid="0"] .mesIDDisplay:not(:empty),
+html body.mt-enabled #chat .mes[mesid="0"] .mes_timer:not(:empty),
+html body.mt-enabled #chat .mes:first-child .tokenCounterDisplay:not(:empty),
+html body.mt-enabled #chat .mes:first-child .mesIDDisplay:not(:empty),
+html body.mt-enabled #chat .mes:first-child .mes_timer:not(:empty),
+html body.mt-enabled #chat .mes:first-of-type .tokenCounterDisplay:not(:empty),
+html body.mt-enabled #chat .mes:first-of-type .mesIDDisplay:not(:empty),
+html body.mt-enabled #chat .mes:first-of-type .mes_timer:not(:empty) {
+  display: block !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+  position: absolute !important;
+  /* Header band under ::after name (top:15px), above banner + body text */
+  top: 56px !important;
+  bottom: auto !important;
+  right: auto !important;
+  z-index: 1200 !important;
+  width: 4.25rem !important;
+  min-width: 4.25rem !important;
+  max-width: 4.25rem !important;
+  height: auto !important;
+  border: 1px solid var(--sub, #d6d6d6) !important;
+  padding: 5px 6px !important;
+  clip: auto !important;
+  clip-path: none !important;
+  transform: none !important;
+}
+html body.mt-enabled #chat .mes[mesid="0"] .tokenCounterDisplay:not(:empty),
+html body.mt-enabled #chat .mes:first-child .tokenCounterDisplay:not(:empty),
+html body.mt-enabled #chat .mes:first-of-type .tokenCounterDisplay:not(:empty) {
+  left: 48.5% !important;
+}
+html body.mt-enabled #chat .mes[mesid="0"] .mesIDDisplay:not(:empty),
+html body.mt-enabled #chat .mes:first-child .mesIDDisplay:not(:empty),
+html body.mt-enabled #chat .mes:first-of-type .mesIDDisplay:not(:empty) {
+  left: calc(48.5% + 4.25rem + 6px) !important;
+}
+html body.mt-enabled #chat .mes[mesid="0"] .mes_timer:not(:empty),
+html body.mt-enabled #chat .mes:first-child .mes_timer:not(:empty),
+html body.mt-enabled #chat .mes:first-of-type .mes_timer:not(:empty) {
+  left: calc(48.5% + 2 * (4.25rem + 6px)) !important;
+}

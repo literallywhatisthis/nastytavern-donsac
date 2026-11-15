@@ -4,6 +4,16 @@ All notable changes to NastyTavern UI are documented here.
 
 ---
 
+## v0.1.14-donsac.10
+
+### Fixed
+
+- First/greeting chat message only: token / `#id` / timer boxes were sitting on the body text. Anchor them to `.mes` (neutralize nested `.mes_block` positioning) so they sit in the header under the name, above the banner — later messages unchanged.
+
+**Reload the extension / pull latest** after updating — `auto_update` is false.
+
+---
+
 ## v0.1.14-donsac.9
 
 ### Fixed
